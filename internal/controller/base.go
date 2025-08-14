@@ -11,6 +11,7 @@ type LivraisonHandler interface {
 	Login(*gin.Context)
 	Logout(*gin.Context)
 	Refresh(*gin.Context)
+	CreatUser(*gin.Context)
 }
 
 type livraisonHandler struct {

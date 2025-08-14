@@ -5,8 +5,13 @@ const PPE = "p5aNLsDH3r$YDQQ5"
 
 // routes constant
 const (
-	AuthPath    = "/auth"
-	LoginPath   = "/login"
-	LogoutPath  = "/logout"
-	RefreshPath = "/refresh"
+	// authentification
+	AuthPath = "/auth"
+	Login    = "/login"
+	Logout   = "/logout"
+	Refresh  = "/refresh"
+
+	// user
+	UserPath = "/user"
+	Creat    = "/creatUser"
 )
