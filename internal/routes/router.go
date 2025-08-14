@@ -6,14 +6,21 @@ import (
 	"car_project/internal/jwt"
 	"car_project/internal/middleware"
 
+	_ "car_project/cmd/car/docs"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func GetRoutes(apiAddress string) {
 	cHandler := controller.NewHandler()
 	router := gin.Default()
 	router.Use(cors.New(middleware.Cors()))
+
+	// Route Swagger UI
+	router.GET(config.SwaggerPath, ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	authGroup := router.Group(config.AuthPath)
 	{

@@ -15,6 +15,11 @@ func init() {
 	config.Load()
 }
 
+// @title           Nom de votre API
+// @version         1.0
+// @description     Description de votre API
+// @host            localhost:8082
+// @BasePath        /
 func main() {
 	apiAddress := fmt.Sprintf("%s:%d", config.AppConfiguration.API.Host, config.AppConfiguration.API.Port)
 	if apiAddress == "" {
