@@ -17,9 +17,14 @@ func GetRoutes(apiAddress string) {
 
 	authGroup := router.Group(config.AuthPath)
 	{
-		authGroup.POST(config.LoginPath, cHandler.Login)
-		authGroup.POST(config.LogoutPath, cHandler.Logout)
-		authGroup.GET(config.RefreshPath, jwt.AuthMiddleware(), cHandler.Refresh)
+		authGroup.POST(config.Login, cHandler.Login)
+		authGroup.POST(config.Logout, cHandler.Logout)
+		authGroup.GET(config.Refresh, jwt.AuthMiddleware(), cHandler.Refresh)
+	}
+
+	userGroup := router.Group(config.UserPath, jwt.AuthMiddleware())
+	{
+		userGroup.POST(config.Creat, cHandler.CreatUser)
 	}
 
 	router.Run(apiAddress)
