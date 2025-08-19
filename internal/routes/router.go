@@ -6,8 +6,6 @@ import (
 	"car_project/internal/jwt"
 	"car_project/internal/middleware"
 
-	_ "car_project/cmd/car/docs"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -32,6 +30,8 @@ func GetRoutes(apiAddress string) {
 	userGroup := router.Group(config.UserPath, jwt.AuthMiddleware())
 	{
 		userGroup.POST(config.Creat, cHandler.CreatUser)
+		userGroup.DELETE(config.Delete, cHandler.DeleteUser)
+		userGroup.PUT(config.Update, cHandler.UpdateUser)
 	}
 
 	router.Run(apiAddress)
