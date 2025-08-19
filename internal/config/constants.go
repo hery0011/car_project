@@ -8,6 +8,9 @@ const (
 	//swager
 	SwaggerPath = "/swagger/*any"
 
+	//adminPath
+	AdminPath = "/admin"
+
 	// authentification
 	AuthPath = "/auth"
 	Login    = "/login"
@@ -19,4 +22,9 @@ const (
 	Creat    = "/creatUser"
 	Delete   = "/:idUser/delete"
 	Update   = "/updateUser"
+
+	//profil
+	ProfilPath   = "/profil"
+	GetProfil    = "/list"
+	AssignProfil = "/assignProfil"
 )

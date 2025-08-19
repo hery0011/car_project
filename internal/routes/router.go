@@ -27,11 +27,20 @@ func GetRoutes(apiAddress string) {
 		authGroup.GET(config.Refresh, jwt.AuthMiddleware(), cHandler.Refresh)
 	}
 
-	userGroup := router.Group(config.UserPath, jwt.AuthMiddleware())
+	adminGroup := router.Group(config.AdminPath)
 	{
-		userGroup.POST(config.Creat, cHandler.CreatUser)
-		userGroup.DELETE(config.Delete, cHandler.DeleteUser)
-		userGroup.PUT(config.Update, cHandler.UpdateUser)
+		userGroup := adminGroup.Group(config.UserPath, jwt.AuthMiddleware())
+		{
+			userGroup.POST(config.Creat, cHandler.CreatUser)
+			userGroup.DELETE(config.Delete, cHandler.DeleteUser)
+			userGroup.PUT(config.Update, cHandler.UpdateUser)
+		}
+
+		profilGroup := adminGroup.Group(config.ProfilPath, jwt.AuthMiddleware())
+		{
+			profilGroup.GET(config.GetProfil, cHandler.GetListProfil)
+			profilGroup.POST(config.AssignProfil, cHandler.AssignProfil)
+		}
 	}
 
 	router.Run(apiAddress)

@@ -23,7 +23,7 @@ import (
 //	@Success		200		{object}	map[string]interface{}	"User created successfully"
 //	@Failure		400		{object}	map[string]interface{}	"Invalid request data"
 //	@Failure		500		{object}	map[string]interface{}	"Internal server error"
-//	@Router			/user/creatUser [post]
+//	@Router			/admin/user/creatUser [post]
 func (h *livraisonHandler) CreatUser(c *gin.Context) {
 	var user entities.LoginStruct
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -76,7 +76,7 @@ func (h *livraisonHandler) CreatUser(c *gin.Context) {
 // @Failure      400  {object}  map[string]interface{}  "ID invalide"
 // @Failure      200  {object}  map[string]interface{}  "Utilisateur introuvable"
 // @Failure      500  {object}  map[string]interface{}  "Erreur interne du serveur"
-// @Router       /user/{idUser}/delete [delete]
+// @Router       /admin/user/{idUser}/delete [delete]
 func (h *livraisonHandler) DeleteUser(c *gin.Context) {
 	var userEntite entities.LoginStruct
 	var idUser = c.Param("idUser")
@@ -122,7 +122,7 @@ func (h *livraisonHandler) DeleteUser(c *gin.Context) {
 // @Param payload body entities.LoginStruct true "Utilisateur à mettre à jour"
 // @Success 200 {object} map[string]interface{} "Utilisateur mis à jour avec succès"
 // @Failure 400 {object} map[string]interface{} "Erreur lors de la mise à jour"
-// @Router /user/updateUser [put]
+// @Router /admin/user/updateUser [put]
 func (h *livraisonHandler) UpdateUser(c *gin.Context) {
 	var payload entities.LoginStruct
 
