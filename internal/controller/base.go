@@ -12,6 +12,8 @@ type LivraisonHandler interface {
 	Logout(*gin.Context)
 	Refresh(*gin.Context)
 	CreatUser(*gin.Context)
+	DeleteUser(*gin.Context)
+	UpdateUser(*gin.Context)
 }
 
 type livraisonHandler struct {

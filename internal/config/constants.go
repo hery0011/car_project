@@ -17,4 +17,6 @@ const (
 	// user
 	UserPath = "/user"
 	Creat    = "/creatUser"
+	Delete   = "/:idUser/delete"
+	Update   = "/updateUser"
 )
