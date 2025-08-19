@@ -14,6 +14,8 @@ type LivraisonHandler interface {
 	CreatUser(*gin.Context)
 	DeleteUser(*gin.Context)
 	UpdateUser(*gin.Context)
+	GetListProfil(*gin.Context)
+	AssignProfil(*gin.Context)
 }
 
 type livraisonHandler struct {
