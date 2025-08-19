@@ -5,6 +5,9 @@ const PPE = "p5aNLsDH3r$YDQQ5"
 
 // routes constant
 const (
+	//swager
+	SwaggerPath = "/swagger/*any"
+
 	// authentification
 	AuthPath = "/auth"
 	Login    = "/login"

@@ -7,6 +7,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CreatUser handles the creation of a new user within a transactional context.
+// It processes the incoming HTTP request, validates the input, and creates a user record in the database.
+// If any error occurs during the process, the transaction is rolled back and an appropriate error response is returned.
+// This handler expects a JSON payload representing the user to be created.
+//
+//	@Summary		Create a new user
+//	@Description	Creates a new user in the system within a transactional context.
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			user	body		entities.LoginStruct	true	"User creation payload"
+//	@Success		200		{object}	map[string]interface{}	"User created successfully"
+//	@Failure		400		{object}	map[string]interface{}	"Invalid request data"
+//	@Failure		500		{object}	map[string]interface{}	"Internal server error"
+//	@Router			/user/creatUser [post]
 func (h *livraisonHandler) CreatUser(c *gin.Context) {
 	var user entities.LoginStruct
 	if err := c.ShouldBindJSON(&user); err != nil {
