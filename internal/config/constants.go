@@ -11,6 +11,9 @@ const (
 	//adminPath
 	AdminPath = "/admin"
 
+	//dashboardPaath
+	DashPath = "/dash"
+
 	// authentification
 	AuthPath = "/auth"
 	Login    = "/login"
@@ -27,4 +30,8 @@ const (
 	ProfilPath   = "/profil"
 	GetProfil    = "/list"
 	AssignProfil = "/assignProfil"
+
+	//article
+	ArticlePath = "/article"
+	List        = "/list"
 )
