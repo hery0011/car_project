@@ -16,6 +16,7 @@ type LivraisonHandler interface {
 	UpdateUser(*gin.Context)
 	GetListProfil(*gin.Context)
 	AssignProfil(*gin.Context)
+	ListArticle(*gin.Context)
 }
 
 type livraisonHandler struct {
