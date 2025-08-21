@@ -10,7 +10,7 @@ type Articles struct {
 	Categorie_id  int     `json:"categorie_id" gorm:"coumn:categorie_id"`
 }
 
-func (Article) TableName() string {
+func (Articles) TableName() string {
 	return "Article"
 }
 
@@ -38,4 +38,8 @@ type ArticleResponse struct {
 	Categorie   Categorie      `json:"categorie"`
 	Commercant  Commercant     `json:"commercant"`
 	Images      []ArticleImage `json:"images"`
+}
+
+func (Article) TableName() string {
+	return "Article"
 }
