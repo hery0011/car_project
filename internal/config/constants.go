@@ -33,5 +33,9 @@ const (
 
 	//article
 	ArticlePath = "/article"
-	List        = "/list"
+	ListArticle = "/list"
+
+	//categorie
+	CategoriePath = "/categorie"
+	ListCategorie = "/list"
 )
