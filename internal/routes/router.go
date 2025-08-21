@@ -48,6 +48,8 @@ func GetRoutes(apiAddress string) {
 		articleGroup := dashboardGroup.Group(config.ArticlePath, jwt.AuthMiddleware())
 		{
 			articleGroup.GET(config.ListArticle, cHandler.ListArticle)
+			articleGroup.POST(config.AddArticle, cHandler.AjoutArticle)
+			articleGroup.DELETE(config.DeleteArticle, cHandler.DeleteArticle)
 
 			categorieGroup := articleGroup.Group(config.CategoriePath)
 			{

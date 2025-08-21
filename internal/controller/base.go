@@ -18,6 +18,8 @@ type LivraisonHandler interface {
 	AssignProfil(*gin.Context)
 	ListArticle(*gin.Context)
 	ListCategorie(*gin.Context)
+	AjoutArticle(*gin.Context)
+	DeleteArticle(*gin.Context)
 }
 
 type livraisonHandler struct {

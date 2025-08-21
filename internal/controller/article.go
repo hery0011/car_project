@@ -98,3 +98,131 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 		"data":       response,
 	})
 }
+
+// AjoutArticle godoc
+// @Summary Ajouter un article
+// @Description Crée un nouvel article dans la base de données
+// @Tags article
+// @Accept  json
+// @Produce  json
+// @Param   article body entities.Articles true "Détails de l'article"
+// @Success 200 {object} map[string]interface{} "Article créé avec succès"
+// @Failure 400 {object} map[string]interface{} "Payload invalide"
+// @Failure 500 {object} map[string]interface{} "Erreur serveur"
+// @Router /dash/article/add [post]
+func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
+	var payload entities.Articles
+
+	// Vérifier que le JSON est correct
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "Invalid request payload",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// Vérifier la connexion DB
+	if h.db == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Database connection not initialized",
+		})
+		return
+	}
+
+	// Début transaction
+	tx := h.db.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Failed to start transaction",
+			"error":   tx.Error.Error(),
+		})
+		return
+	}
+
+	// Création de l'article
+	if err := tx.Create(&payload).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Failed to create article",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Failed to commit transaction",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// Succès
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "Article created successfully",
+		"data":    payload,
+	})
+}
+
+// DeleteArticle godoc
+// @Summary Supprimer un article
+// @Description Supprime un article en fonction de son ID
+// @Tags Articles
+// @Param id path int true "ID de l'article"
+// @Produce  json
+// @Success 200 {object} map[string]interface{} "Article supprimé avec succès"
+// @Failure 400 {object} map[string]interface{} "ID invalide"
+// @Failure 404 {object} map[string]interface{} "Article introuvable"
+// @Failure 500 {object} map[string]interface{} "Erreur serveur"
+// @Router /dash/article/{id}/delete [delete]
+func (h *livraisonHandler) DeleteArticle(c *gin.Context) {
+	var article entities.Articles
+	id := c.Param("id")
+
+	// Conversion de l'ID
+	idArticle, err := strconv.Atoi(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "Invalid article ID",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// Suppression
+	result := h.db.Where("article_id = ?", idArticle).Delete(&article)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Failed to delete article",
+			"error":   result.Error.Error(),
+		})
+		return
+	}
+
+	// Vérifier si un article a été supprimé
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  http.StatusNotFound,
+			"message": "Article not found",
+		})
+		return
+	}
+
+	// Succès
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "Article deleted successfully",
+		"id":      idArticle,
+	})
+}
