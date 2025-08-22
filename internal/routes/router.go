@@ -55,6 +55,12 @@ func GetRoutes(apiAddress string) {
 			{
 				categorieGroup.GET(config.ListArticle, cHandler.ListCategorie)
 			}
+
+			panierGroup := articleGroup.Group(config.PanierPath)
+			{
+				panierGroup.POST(config.AjoutPanier, cHandler.AjoutPanier)
+				panierGroup.GET(config.DetailPanier, cHandler.DetailPanier)
+			}
 		}
 	}
 

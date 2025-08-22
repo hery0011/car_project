@@ -40,4 +40,9 @@ const (
 	//categorie
 	CategoriePath = "/categorie"
 	ListCategorie = "/list"
+
+	//panier
+	PanierPath   = "/panier"
+	AjoutPanier  = "/add"
+	DetailPanier = "/:id_client/detail"
 )
