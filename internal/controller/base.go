@@ -20,6 +20,8 @@ type LivraisonHandler interface {
 	ListCategorie(*gin.Context)
 	AjoutArticle(*gin.Context)
 	DeleteArticle(*gin.Context)
+	AjoutPanier(*gin.Context)
+	DetailPanier(*gin.Context)
 }
 
 type livraisonHandler struct {

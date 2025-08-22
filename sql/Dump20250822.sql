@@ -425,14 +425,18 @@ DROP TABLE IF EXISTS `Panier`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Panier` (
-  `panier_id` int NOT NULL AUTO_INCREMENT,
-  `client_id` int NOT NULL,
-  `date_creation` datetime DEFAULT CURRENT_TIMESTAMP,
-  `status` enum('en_cours','valide','abandonne') DEFAULT 'en_cours',
+  `panier_id` INT NOT NULL AUTO_INCREMENT,
+  `client_id` INT NOT NULL,
+  `date_creation` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `status_id` INT NOT NULL,
   PRIMARY KEY (`panier_id`),
   KEY `client_id` (`client_id`),
-  CONSTRAINT `Panier_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `Client` (`client_id`)
+  KEY `status_id` (`status_id`),
+  CONSTRAINT `Panier_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `Client` (`client_id`),
+  CONSTRAINT `Panier_ibfk_2` FOREIGN KEY (`status_id`) REFERENCES `status` (`id_status`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
