@@ -6,7 +6,7 @@ type ArticleImage struct {
 	Url        string `json:"url" gorm:"column:url"`
 	Largeur    int    `json:"largeur" gorm:"column:largeur"`
 	Hauteur    int    `json:"hauteur" gorm:"column:hauteur"`
-	Order      int    `json:"order" gorm:"column:order"`
+	Ordre      int    `json:"order" gorm:"column:ordre"`
 	Type       string `json:"type" gorm:"column:type; type:enum('main', 'gallery', 'thumbnail')"`
 	Taille     string `json:"taille" gorm:"column:taille"`
 }

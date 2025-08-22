@@ -2,6 +2,7 @@ package controller
 
 import (
 	"car_project/internal/entities"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -100,34 +101,56 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 }
 
 // AjoutArticle godoc
-// @Summary Ajouter un article
-// @Description Crée un nouvel article dans la base de données
+// @Summary Ajouter un nouvel article
+// @Description Crée un article avec ses informations et une image associée
 // @Tags article
-// @Accept  json
-// @Produce  json
-// @Param   article body entities.Articles true "Détails de l'article"
+// @Accept multipart/form-data
+// @Produce json
+// @Param nom formData string true "Nom de l'article"
+// @Param description formData string false "Description de l'article"
+// @Param prix formData number true "Prix de l'article"
+// @Param stock formData int true "Quantité en stock"
+// @Param commercant_id formData int true "ID du commerçant"
+// @Param categorie_id formData int true "ID de la catégorie"
+// @Param largeur formData int false "Largeur de l'image"
+// @Param hauteur formData int false "Hauteur de l'image"
+// @Param ordre formData int false "Ordre de l'image"
+// @Param type formData string false "Type de l'image (jpg, png, etc.)"
+// @Param taille formData string false "Taille de l'image"
+// @Param image formData file true "Fichier image à uploader"
 // @Success 200 {object} map[string]interface{} "Article créé avec succès"
-// @Failure 400 {object} map[string]interface{} "Payload invalide"
-// @Failure 500 {object} map[string]interface{} "Erreur serveur"
+// @Failure 400 {object} map[string]interface{} "Requête invalide ou image manquante"
+// @Failure 500 {object} map[string]interface{} "Erreur serveur lors de l'ajout de l'article"
 // @Router /dash/article/add [post]
 func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
-	var payload entities.Articles
+	// Récupération des champs (form-data)
+	var article entities.Articles
+	article.Nom = c.PostForm("nom")
+	article.Description = c.PostForm("description")
 
-	// Vérifier que le JSON est correct
-	if err := c.ShouldBindJSON(&payload); err != nil {
+	// Convertir prix et stock
+	prix, _ := strconv.ParseFloat(c.PostForm("prix"), 64)
+	stock, _ := strconv.Atoi(c.PostForm("stock"))
+	commercantID, _ := strconv.Atoi(c.PostForm("commercant_id"))
+	categorieID, _ := strconv.Atoi(c.PostForm("categorie_id"))
+	largeur, _ := strconv.Atoi(c.PostForm("largeur"))
+	hauteur, _ := strconv.Atoi(c.PostForm("hauteur"))
+	ordre, _ := strconv.Atoi(c.PostForm("ordre"))
+	imageType := c.PostForm("type")
+	taille := c.PostForm("taille")
+
+	article.Prix = prix
+	article.Stock = stock
+	article.Commercant_id = commercantID
+	article.Categorie_id = categorieID
+
+	// Fichier image
+	file, err := c.FormFile("image")
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
-			"message": "Invalid request payload",
+			"message": "Image is required",
 			"error":   err.Error(),
-		})
-		return
-	}
-
-	// Vérifier la connexion DB
-	if h.db == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Database connection not initialized",
 		})
 		return
 	}
@@ -135,33 +158,47 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 	// Début transaction
 	tx := h.db.Begin()
 	if tx.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Failed to start transaction",
-			"error":   tx.Error.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to start transaction", "error": tx.Error.Error()})
 		return
 	}
 
-	// Création de l'article
-	if err := tx.Create(&payload).Error; err != nil {
+	// Insérer l'article
+	if err := tx.Create(&article).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Failed to create article",
-			"error":   err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create article", "error": err.Error()})
+		return
+	}
+
+	// Définir le chemin du fichier (uploads/ + nom original)
+	filePath := fmt.Sprintf("uploads/%d_%s", article.Article_id, file.Filename)
+
+	// Sauvegarde dans uploads/
+	if err := c.SaveUploadedFile(file, filePath); err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save image", "error": err.Error()})
+		return
+	}
+
+	// Insérer dans Article_Image
+	imageRecord := entities.ArticleImage{
+		Article_id: article.Article_id,
+		Url:        filePath,
+		Largeur:    largeur,
+		Hauteur:    hauteur,
+		Ordre:      ordre,
+		Type:       imageType,
+		Taille:     taille,
+	}
+	if err := tx.Create(&imageRecord).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save image record", "error": err.Error()})
 		return
 	}
 
 	// Commit transaction
 	if err := tx.Commit().Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Failed to commit transaction",
-			"error":   err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit transaction", "error": err.Error()})
 		return
 	}
 
@@ -169,14 +206,17 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
 		"message": "Article created successfully",
-		"data":    payload,
+		"data": gin.H{
+			"article": article,
+			"image":   imageRecord,
+		},
 	})
 }
 
 // DeleteArticle godoc
 // @Summary Supprimer un article
 // @Description Supprime un article en fonction de son ID
-// @Tags Articles
+// @Tags article
 // @Param id path int true "ID de l'article"
 // @Produce  json
 // @Success 200 {object} map[string]interface{} "Article supprimé avec succès"
