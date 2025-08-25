@@ -2,6 +2,8 @@ package config
 
 const ROOT_FOLDER_VAR = "PROJECT_ROOT_FOLDER"
 const PPE = "p5aNLsDH3r$YDQQ5"
+const PANIER_OUVERT = 4
+const PANIER_FERMER = 5
 
 // routes constant
 const (
@@ -45,4 +47,5 @@ const (
 	PanierPath   = "/panier"
 	AjoutPanier  = "/add"
 	DetailPanier = "/:id_client/detail"
+	DeletePanier = "/:id_panier/delete"
 )

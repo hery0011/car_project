@@ -60,6 +60,7 @@ func GetRoutes(apiAddress string) {
 			{
 				panierGroup.POST(config.AjoutPanier, cHandler.AjoutPanier)
 				panierGroup.GET(config.DetailPanier, cHandler.DetailPanier)
+				panierGroup.DELETE(config.DeletePanier, cHandler.DeletePanier)
 			}
 		}
 	}
