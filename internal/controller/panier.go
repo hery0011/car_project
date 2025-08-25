@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"car_project/internal/config"
 	"car_project/internal/entities"
 	"net/http"
 	"strconv"
@@ -43,7 +44,7 @@ func (h *livraisonHandler) AjoutPanier(c *gin.Context) {
 	// 1️⃣ Créer le panier
 	panier := entities.Panier{
 		ClientId:     payload.ClientId,
-		Status_id:    4, // status "panier ouvert"
+		Status_id:    config.PANIER_OUVERT,
 		DateCreation: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
@@ -118,7 +119,7 @@ func (h *livraisonHandler) DetailPanier(c *gin.Context) {
 	var paniers []entities.Panier
 	// Status "panier ouvert" → id_status = 4
 	if err := h.db.
-		Where("client_id = ? AND status_id = ?", clientID, 4).
+		Where("client_id = ? AND status_id = ?", clientID, config.PANIER_OUVERT).
 		Find(&paniers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Impossible de récupérer les paniers"})
 		return
@@ -137,4 +138,61 @@ func (h *livraisonHandler) DetailPanier(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, result)
+}
+
+// DeletePanier supprime un panier et ses articles associés.
+// Si le panier contient encore des articles, ils seront supprimés avant (ON DELETE CASCADE ou suppression manuelle).
+//
+//	@Summary		Supprimer un panier
+//	@Description	Supprime un panier par son ID. Si des articles sont liés, ils sont également supprimés.
+//	@Tags			panier
+//	@Accept			json
+//	@Produce		json
+//	@Param			id_panier	path		int	true	"ID du panier à supprimer"
+//	@Success		200	{object}	map[string]interface{}	"Panier et articles supprimés avec succès"
+//	@Failure		400	{object}	map[string]string	"ID invalide"
+//	@Failure		404	{object}	map[string]string	"Panier introuvable"
+//	@Failure		500	{object}	map[string]string	"Erreur lors de la suppression du panier"
+//	@Router			/dash/article/panier/{id_panier}delete [delete]
+func (h *livraisonHandler) DeletePanier(c *gin.Context) {
+	var panier entities.Panier
+	idPanier := c.Param("id_panier")
+
+	id, err := strconv.Atoi(idPanier)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "ID invalide"})
+		return
+	}
+
+	// Vérifier si le panier existe
+	if err := h.db.First(&panier, "panier_id = ?", id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Panier introuvable"})
+		return
+	}
+
+	// Supprimer d'abord les articles liés
+	if err := h.db.Where("panier_id = ?", id).Delete(&entities.PanierArticle{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Erreur lors de la suppression des articles du panier",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// Ensuite supprimer le panier
+	if err := h.db.Delete(&panier).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Erreur lors de la suppression du panier",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "Panier et ses articles supprimés avec succès",
+		"data":    panier,
+	})
 }
