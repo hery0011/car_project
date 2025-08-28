@@ -216,7 +216,7 @@ CREATE TABLE `Commande` (
   `client_id` int NOT NULL,
   `date_commande` datetime DEFAULT CURRENT_TIMESTAMP,
   `montant_total` decimal(12,2) NOT NULL,
-  `status` enum('en_attente','payee','annulee') DEFAULT 'en_attente',
+  `status_id` int DEFAULT NULL,
   PRIMARY KEY (`commande_id`),
   KEY `client_id` (`client_id`),
   CONSTRAINT `Commande_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `Client` (`client_id`)
@@ -229,7 +229,7 @@ CREATE TABLE `Commande` (
 
 LOCK TABLES `Commande` WRITE;
 /*!40000 ALTER TABLE `Commande` DISABLE KEYS */;
-INSERT INTO `Commande` VALUES (1,1,'2025-08-20 09:22:04',75000.00,'en_attente');
+INSERT INTO `Commande` VALUES (1,1,'2025-08-20 09:22:04',75000.00,1);
 /*!40000 ALTER TABLE `Commande` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -241,13 +241,14 @@ DROP TABLE IF EXISTS `Commande_Article`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Commande_Article` (
-  `commande_id` int NOT NULL,
+  `commande_article_id` int NOT NULL,
+  `Commande_id` int DEFAULT NULL,
   `article_id` int NOT NULL,
   `quantite` int NOT NULL,
   `prix_unitaire` decimal(10,2) NOT NULL,
-  PRIMARY KEY (`commande_id`,`article_id`),
+  PRIMARY KEY (`commande_article_id`,`article_id`),
   KEY `article_id` (`article_id`),
-  CONSTRAINT `Commande_Article_ibfk_1` FOREIGN KEY (`commande_id`) REFERENCES `Commande` (`commande_id`),
+  CONSTRAINT `Commande_Article_ibfk_1` FOREIGN KEY (`commande_article_id`) REFERENCES `Commande` (`commande_id`),
   CONSTRAINT `Commande_Article_ibfk_2` FOREIGN KEY (`article_id`) REFERENCES `Article` (`article_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -258,7 +259,7 @@ CREATE TABLE `Commande_Article` (
 
 LOCK TABLES `Commande_Article` WRITE;
 /*!40000 ALTER TABLE `Commande_Article` DISABLE KEYS */;
-INSERT INTO `Commande_Article` VALUES (1,1,2,15000.00),(1,3,1,45000.00);
+INSERT INTO `Commande_Article` VALUES (1,NULL,1,2,15000.00),(1,NULL,3,1,45000.00);
 /*!40000 ALTER TABLE `Commande_Article` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -425,18 +426,14 @@ DROP TABLE IF EXISTS `Panier`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Panier` (
-  `panier_id` INT NOT NULL AUTO_INCREMENT,
-  `client_id` INT NOT NULL,
-  `date_creation` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `status_id` INT NOT NULL,
+  `panier_id` int NOT NULL AUTO_INCREMENT,
+  `client_id` int NOT NULL,
+  `date_creation` datetime DEFAULT CURRENT_TIMESTAMP,
+  `status_id` int DEFAULT NULL,
   PRIMARY KEY (`panier_id`),
   KEY `client_id` (`client_id`),
-  KEY `status_id` (`status_id`),
-  CONSTRAINT `Panier_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `Client` (`client_id`),
-  CONSTRAINT `Panier_ibfk_2` FOREIGN KEY (`status_id`) REFERENCES `status` (`id_status`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
+  CONSTRAINT `Panier_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `Client` (`client_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -445,7 +442,7 @@ CREATE TABLE `Panier` (
 
 LOCK TABLES `Panier` WRITE;
 /*!40000 ALTER TABLE `Panier` DISABLE KEYS */;
-INSERT INTO `Panier` VALUES (1,1,'2025-08-20 09:22:04','en_cours');
+INSERT INTO `Panier` VALUES (1,1,'2025-08-20 09:22:04',1),(5,1,'2025-08-22 15:01:38',4),(6,1,'2025-08-22 15:03:22',4);
 /*!40000 ALTER TABLE `Panier` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -473,7 +470,7 @@ CREATE TABLE `Panier_Article` (
 
 LOCK TABLES `Panier_Article` WRITE;
 /*!40000 ALTER TABLE `Panier_Article` DISABLE KEYS */;
-INSERT INTO `Panier_Article` VALUES (1,1,2),(1,3,1);
+INSERT INTO `Panier_Article` VALUES (1,1,2),(1,3,1),(5,1,2),(6,1,2);
 /*!40000 ALTER TABLE `Panier_Article` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -561,6 +558,31 @@ INSERT INTO `profil` VALUES (1,'client','Profil pour les clients'),(2,'commerça
 UNLOCK TABLES;
 
 --
+-- Table structure for table `status`
+--
+
+DROP TABLE IF EXISTS `status`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `status` (
+  `id_status` int NOT NULL AUTO_INCREMENT,
+  `nom_status` varchar(50) NOT NULL,
+  PRIMARY KEY (`id_status`),
+  UNIQUE KEY `nom_status` (`nom_status`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `status`
+--
+
+LOCK TABLES `status` WRITE;
+/*!40000 ALTER TABLE `status` DISABLE KEYS */;
+INSERT INTO `status` VALUES (2,'commande en cours'),(3,'commande fermer'),(1,'commande ouvert'),(5,'panier fermer'),(4,'panier ouvert');
+/*!40000 ALTER TABLE `status` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `user`
 --
 
@@ -628,4 +650,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-08-22  9:16:49
+-- Dump completed on 2025-08-28 13:29:04
