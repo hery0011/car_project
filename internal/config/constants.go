@@ -4,6 +4,9 @@ const ROOT_FOLDER_VAR = "PROJECT_ROOT_FOLDER"
 const PPE = "p5aNLsDH3r$YDQQ5"
 const PANIER_OUVERT = 4
 const PANIER_FERMER = 5
+const COMMANDE_OUVERT = 1
+const COMMANDE_FERMER = 3
+const COMMANDE_EN_COURS = 2
 
 // routes constant
 const (
@@ -48,4 +51,8 @@ const (
 	AjoutPanier  = "/add"
 	DetailPanier = "/:id_client/detail"
 	DeletePanier = "/:id_panier/delete"
+
+	//commande
+	CommandePath  = "/commande"
+	AjoutCommande = "/add"
 )
