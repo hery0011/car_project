@@ -5,7 +5,7 @@ type Commande struct {
 	ClientId     int     `json:"client_id" gorm:"column:client_id"`
 	DateCommande string  `json:"date_commande" gorm:"column:date_commande"`
 	MontantTotal float64 `json:"montant_total" gorm:"column:montant_total"`
-	Status       int     `json:"status" gorm:"column:status"`
+	StatusId     int     `json:"status_id" gorm:"column:status_id"`
 }
 
 func (Commande) TableName() string {

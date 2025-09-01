@@ -5,6 +5,7 @@ import (
 	"car_project/internal/controller"
 	"car_project/internal/jwt"
 	"car_project/internal/middleware"
+	"car_project/internal/ws"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -62,8 +63,16 @@ func GetRoutes(apiAddress string) {
 				panierGroup.GET(config.DetailPanier, cHandler.DetailPanier)
 				panierGroup.DELETE(config.DeletePanier, cHandler.DeletePanier)
 			}
+
+			commandeGroup := articleGroup.Group(config.CommandePath, jwt.AuthMiddleware())
+			{
+				commandeGroup.POST(config.AjoutCommande, cHandler.AjoutCommande)
+			}
 		}
 	}
+
+	// ✅ Nouvelle route WebSocket pour commerçants
+	router.GET("/ws/commercant/:id", ws.HandleWS)
 
 	router.Run(apiAddress)
 }
