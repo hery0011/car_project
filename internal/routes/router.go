@@ -67,7 +67,15 @@ func GetRoutes(apiAddress string) {
 			commandeGroup := articleGroup.Group(config.CommandePath, jwt.AuthMiddleware())
 			{
 				commandeGroup.POST(config.AjoutCommande, cHandler.AjoutCommande)
+				commandeGroup.PUT(config.AssignCommande, cHandler.AssignCommande)
+				commandeGroup.GET(config.ListCommandeCreer, cHandler.ListeCommandeOuvert)
+				commandeGroup.GET(config.CommandeAssign, cHandler.ListeCommandeAssign)
 			}
+		}
+
+		livreurGroup := dashboardGroup.Group(config.LivreurPath, jwt.AuthMiddleware())
+		{
+			livreurGroup.POST(config.AjoutLivreur, cHandler.AjoutLivreur)
 		}
 	}
 

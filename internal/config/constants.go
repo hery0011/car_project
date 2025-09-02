@@ -7,6 +7,7 @@ const PANIER_FERMER = 5
 const COMMANDE_OUVERT = 1
 const COMMANDE_FERMER = 3
 const COMMANDE_EN_COURS = 2
+const STATUS_ASSIGN = 0
 
 // routes constant
 const (
@@ -53,6 +54,13 @@ const (
 	DeletePanier = "/:id_panier/delete"
 
 	//commande
-	CommandePath  = "/commande"
-	AjoutCommande = "/add"
+	CommandePath      = "/commande"
+	AjoutCommande     = "/add"
+	AssignCommande    = "/:id_commande/assign/:id_livreur"
+	ListCommandeCreer = "/commandeOuvert"
+	CommandeAssign    = "/commandeAssign/:user_id"
+
+	//livreur
+	LivreurPath  = "/livreur"
+	AjoutLivreur = "/add"
 )
