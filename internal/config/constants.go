@@ -63,4 +63,8 @@ const (
 	//livreur
 	LivreurPath  = "/livreur"
 	AjoutLivreur = "/add"
+
+	//commercant
+	CommercantPath    = "/commercant"
+	ChercheCommercant = "/ChercheCommercant"
 )

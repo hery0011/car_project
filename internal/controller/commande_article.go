@@ -13,10 +13,13 @@ import (
 )
 
 type ArticlePayload struct {
-	ClientId     int     `json:"client_id"`
-	ArticleId    int     `json:"article_id"`
-	Quantite     int     `json:"quantite"`
-	PrixUnitaire float64 `json:"prix_unitaire"`
+	ClientId       int     `json:"client_id"`
+	ArticleId      int     `json:"article_id"`
+	Quantite       int     `json:"quantite"`
+	PrixUnitaire   float64 `json:"prix_unitaire"`
+	LieuxLivraison string  `json:"lieuxLivraison" gorm:"column:lieuxLivraison"`
+	Latitude       float64 `json:"latitude" gorm:"latitude"`
+	Longitude      float64 `json:"longitude" gorm:"longitude"`
 }
 
 // AjoutCommande godoc
@@ -29,85 +32,82 @@ type ArticlePayload struct {
 // @Success 200 {object} map[string]interface{} "Commande créée avec succès, contient la commande et les articles"
 // @Failure 400 {object} map[string]interface{} "Payload vide ou erreur lors de l'insertion"
 // @Failure 500 {object} map[string]interface{} "Erreur serveur lors de la création de la commande"
-// @Router /ddash/article/commande/add [post]
+// @Router /dash/article/commande/add [post]
 func (h *livraisonHandler) AjoutCommande(c *gin.Context) {
-
-	var payload []ArticlePayload
+	var payload ArticlePayload
 
 	// Lire le JSON venant du frontend
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"status":  http.StatusOK,
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
 			"message": err.Error(),
 		})
 		return
 	}
 
-	if len(payload) == 0 {
+	// Vérifier si le payload est vide (ex: quantite <= 0 ou client_id manquant)
+	if payload.ClientId == 0 || payload.ArticleId == 0 || payload.Quantite == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusOK,
-			"message": "payload vide",
+			"status":  http.StatusBadRequest,
+			"message": "payload invalide ou incomplet",
 		})
 		return
 	}
 
 	// Calcul du montant total
-	var montantTotal float64
-	for _, item := range payload {
-		montantTotal += float64(item.Quantite) * item.PrixUnitaire
-	}
+	montantTotal := float64(payload.Quantite) * payload.PrixUnitaire
 
 	// Créer la commande
 	commande := entities.Commande{
-		ClientId:      payload[0].ClientId, // même client pour tous les articles
-		DateCommande:  time.Now().Format("2006-01-02"),
-		MontantTotal:  montantTotal,
-		StatusId:      config.COMMANDE_OUVERT,
-		LivreurAssign: config.STATUS_ASSIGN,
+		ClientId:       payload.ClientId,
+		DateCommande:   time.Now().Format("2006-01-02"),
+		MontantTotal:   montantTotal,
+		StatusId:       config.COMMANDE_OUVERT,
+		LivreurAssign:  config.STATUS_ASSIGN,
+		LieuxLivraison: payload.LieuxLivraison,
+		Latitude:       payload.Latitude,
+		Longitude:      payload.Longitude,
 	}
 
 	if err := h.db.Create(&commande).Error; err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"data":    http.StatusOK,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
 			"message": err.Error(),
 		})
 		return
 	}
 
-	// Insérer les articles liés
-	var articles []entities.CommandeArticle
-	for _, item := range payload {
-		articles = append(articles, entities.CommandeArticle{
-			CommandeId:   commande.CommandeId,
-			ArticleId:    item.ArticleId,
-			Quantite:     item.Quantite,
-			PrixUnitaire: item.PrixUnitaire,
-		})
+	// Insérer l'article lié
+	articleCommande := entities.CommandeArticle{
+		CommandeId:   commande.CommandeId,
+		ArticleId:    payload.ArticleId,
+		Quantite:     payload.Quantite,
+		PrixUnitaire: payload.PrixUnitaire,
 	}
 
-	if err := h.db.Create(&articles).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusOK,
+	if err := h.db.Create(&articleCommande).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
 			"message": err.Error(),
 		})
 		return
 	}
 
-	// 🔹 Envoyer notification WS aux commerçants concernés
-	for _, item := range articles {
-		var article entities.Articles
-		if err := h.db.First(&article, item.ArticleId).Error; err == nil {
-			msg := fmt.Sprintf("Nouvelle commande %d : Article %d x%d", item.CommandeId, item.ArticleId, item.Quantite)
-			fmt.Println("Envoi notif à commerçant:", article.Commercant_id, "msg:", msg)
-			ws.NotifyCommercant(article.Commercant_id, msg)
-		}
+	// 🔹 Envoyer notification WS au commerçant concerné
+	var article entities.Articles
+	if err := h.db.First(&article, payload.ArticleId).Error; err == nil {
+		msg := fmt.Sprintf("Nouvelle commande %d : Article %d x%d",
+			commande.CommandeId, payload.ArticleId, payload.Quantite)
+		fmt.Println("Envoi notif à commerçant:", article.Commercant_id, "msg:", msg)
+		ws.NotifyCommercant(article.Commercant_id, msg)
 	}
 
+	// Réponse finale
 	c.JSON(http.StatusOK, gin.H{
 		"status":   http.StatusOK,
 		"message":  "Commande créée avec succès",
 		"commande": commande,
-		"articles": articles,
+		"article":  articleCommande,
 	})
 }
 
@@ -188,12 +188,15 @@ func (h *livraisonHandler) ListeCommandeOuvert(c *gin.Context) {
 		ArticleId         int     `json:"article_id"`
 		Quantite          int     `json:"quantite"`
 		PrixUnitaire      float64 `json:"prix_unitaire"`
+		LieuxLivraison    string  `json:"lieux_livraison"`
+		Latitude          float64 `json:"latitude"`
+		Longitude         float64 `json:"longitude"`
 	}
 
 	var results []Result
 
 	err := h.db.Table("Commande c").
-		Select(`c.commande_id, c.date_commande, c.montant_total,
+		Select(`c.commande_id, c.date_commande, c.montant_total, c.lieux_livraison, c.latitude, c.longitude,
 				cl.nom AS client_nom, cl.prenom AS client_prenom, cl.email AS client_email, cl.adresse AS adresse,
 				ca.commande_article_id, ca.article_id, ca.quantite, ca.prix_unitaire`).
 		Joins("JOIN Client cl ON c.client_id = cl.client_id").
