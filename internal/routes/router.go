@@ -75,6 +75,11 @@ func GetRoutes(apiAddress string) {
 				commandeGroup.GET(config.CommandeAssign, cHandler.ListeCommandeAssign)
 			}
 
+			commercantGroup := dashboardGroup.Group(config.CommercantPath, jwt.AuthMiddleware())
+			{
+				commercantGroup.POST(config.ChercheCommercant, cHandler.ChercheCommercant)
+			}
+
 			//exemple route
 			//http://localhost:8082/dash/article/search/advanced?nom=sdfsdfdsf
 			articleGroup.GET("/search/advanced", func(c *gin.Context) {

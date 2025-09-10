@@ -1,15 +1,17 @@
 package entities
 
 type LoginStruct struct {
-	Id       int    `json:"id"`
-	Login    string `json:"login"`
-	Password string `json:"password"`
-	Name     string `json:"name"`
-	Lastname string `json:"lastname"`
-	Type     string `json:"type"`
-	Contact  string `json:"contact"`
-	Mail     string `json:"mail"`
-	Adresse  string `json:"adresse"`
+	Id        int     `json:"id"`
+	Login     string  `json:"login"`
+	Password  string  `json:"password"`
+	Name      string  `json:"name"`
+	Lastname  string  `json:"lastname"`
+	Type      string  `json:"type"`
+	Contact   string  `json:"contact"`
+	Mail      string  `json:"mail"`
+	Adresse   string  `json:"adresse"`
+	Latitude  float64 `json:"latitude" gorm:"latitude"`
+	Longitude float64 `json:"longitude" gorm:"longitude"`
 }
 
 func (LoginStruct) TableName() string {
