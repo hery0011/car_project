@@ -1,0 +1,771 @@
+definitions:
+  controller.ArticlePayload:
+    properties:
+      article_id:
+        type: integer
+      client_id:
+        type: integer
+      prix_unitaire:
+        type: number
+      quantite:
+        type: integer
+    type: object
+  entities.ArticleImage:
+    properties:
+      article_id:
+        type: integer
+      hauteur:
+        type: integer
+      image_id:
+        type: integer
+      largeur:
+        type: integer
+      order:
+        type: integer
+      taille:
+        type: string
+      type:
+        type: string
+      url:
+        type: string
+    type: object
+  entities.ArticleResponse:
+    properties:
+      article_id:
+        type: integer
+      categorie:
+        $ref: '#/definitions/entities.Categorie'
+      commercant:
+        $ref: '#/definitions/entities.Commercant'
+      description:
+        type: string
+      images:
+        items:
+          $ref: '#/definitions/entities.ArticleImage'
+        type: array
+      nom:
+        type: string
+      prix:
+        type: number
+      stock:
+        type: integer
+    type: object
+  entities.Categorie:
+    properties:
+      categorie_id:
+        type: integer
+      nom:
+        type: string
+      parent_id:
+        type: integer
+    type: object
+  entities.Commercant:
+    properties:
+      adresse:
+        type: string
+      commercant_id:
+        type: integer
+      description:
+        type: string
+      email:
+        type: string
+      nom:
+        type: string
+      telephone:
+        type: string
+    type: object
+  entities.LoginData:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  entities.LoginStruct:
+    properties:
+      adresse:
+        type: string
+      contact:
+        type: string
+      id:
+        type: integer
+      lastname:
+        type: string
+      login:
+        type: string
+      mail:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      type:
+        type: string
+    type: object
+  entities.PayloadAssignProfil:
+    properties:
+      idProfil:
+        type: integer
+      idUser:
+        type: integer
+    type: object
+  entities.PayloadPanier:
+    properties:
+      article_id:
+        type: integer
+      client_id:
+        type: integer
+      quantite:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /admin/profil/assignProfil:
+    post:
+      consumes:
+      - application/json
+      description: Permet d'associer un profil (client, commerçant, livreur, etc.)
+        à un utilisateur existant
+      parameters:
+      - description: Données pour l’assignation du profil
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entities.PayloadAssignProfil'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profil assigné avec succès
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Payload invalide
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erreur serveur
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Assigner un profil à un utilisateur
+      tags:
+      - profil
+  /admin/profil/list:
+    get:
+      description: Retourne la liste complète des profils disponibles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Liste des profils récupérée avec succès
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Aucun profil trouvé
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erreur lors de la récupération des profils
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Récupérer la liste des profils
+      tags:
+      - profil
+  /admin/user/{idUser}/delete:
+    delete:
+      description: Supprime un utilisateur en fonction de son identifiant (ID).
+      parameters:
+      - description: ID de l'utilisateur
+        in: path
+        name: idUser
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Utilisateur introuvable
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: ID invalide
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erreur interne du serveur
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Supprimer un utilisateur
+      tags:
+      - users
+  /admin/user/creatUser:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user in the system within a transactional context.
+      parameters:
+      - description: User creation payload
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/entities.LoginStruct'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request data
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new user
+      tags:
+      - users
+  /admin/user/updateUser:
+    put:
+      consumes:
+      - application/json
+      description: Met à jour les informations d'un utilisateur existant
+      parameters:
+      - description: Utilisateur à mettre à jour
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entities.LoginStruct'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Utilisateur mis à jour avec succès
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Erreur lors de la mise à jour
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Met à jour un utilisateur
+      tags:
+      - users
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user using their login and password. Returns a
+        JWT access token if successful.
+      parameters:
+      - description: Login payload
+        in: body
+        name: loginData
+        required: true
+        schema:
+          $ref: '#/definitions/entities.LoginData'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid login data or missing fields
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid login credentials
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: User login
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Validates the Bearer token and logs the user out. The token should
+        be removed on the client side.
+      parameters:
+      - description: Bearer access token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Déconnexion réussie
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Token manquant ou invalide
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Logout a user
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Generates a new access token if the provided Bearer token is valid.
+      parameters:
+      - description: Bearer refresh token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Access token refreshed successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Token manquant ou invalide
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Refresh access token
+      tags:
+      - auth
+  /dash/article/{id}/delete:
+    delete:
+      description: Supprime un article en fonction de son ID
+      parameters:
+      - description: ID de l'article
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Article supprimé avec succès
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: ID invalide
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Article introuvable
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erreur serveur
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Supprimer un article
+      tags:
+      - article
+  /dash/article/add:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Crée un article avec ses informations et une image associée
+      parameters:
+      - description: Nom de l'article
+        in: formData
+        name: nom
+        required: true
+        type: string
+      - description: Description de l'article
+        in: formData
+        name: description
+        type: string
+      - description: Prix de l'article
+        in: formData
+        name: prix
+        required: true
+        type: number
+      - description: Quantité en stock
+        in: formData
+        name: stock
+        required: true
+        type: integer
+      - description: ID du commerçant
+        in: formData
+        name: commercant_id
+        required: true
+        type: integer
+      - description: ID de la catégorie
+        in: formData
+        name: categorie_id
+        required: true
+        type: integer
+      - description: Largeur de l'image
+        in: formData
+        name: largeur
+        type: integer
+      - description: Hauteur de l'image
+        in: formData
+        name: hauteur
+        type: integer
+      - description: Ordre de l'image
+        in: formData
+        name: ordre
+        type: integer
+      - description: Type de l'image (jpg, png, etc.)
+        in: formData
+        name: type
+        type: string
+      - description: Taille de l'image
+        in: formData
+        name: taille
+        type: string
+      - description: Fichier image à uploader
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Article créé avec succès
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Requête invalide ou image manquante
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erreur serveur lors de l'ajout de l'article
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Ajouter un nouvel article
+      tags:
+      - article
+  /dash/article/categorie/list:
+    get:
+      description: Récupère la liste des catégories disponibles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Liste des catégories ou tableau vide
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Erreur lors de la récupération
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Liste des catégories
+      tags:
+      - categorie
+  /dash/article/commande/{id_commande}/assign/{id_livreur}:
+    put:
+      consumes:
+      - application/json
+      description: Met à jour une commande en assignant un livreur et en changeant
+        son statut en "EN COURS"
+      parameters:
+      - description: ID de la commande
+        in: path
+        name: id_commande
+        required: true
+        type: integer
+      - description: ID du livreur
+        in: path
+        name: id_livreur
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Commande assignée avec succès
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: ID commande ou livreur invalide
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erreur serveur lors de l'assignation
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Assigner une commande à un livreur
+      tags:
+      - commande
+  /dash/article/commande/commandeAssign/{user_id}:
+    get:
+      description: Récupère toutes les commandes ouvertes assignées à un livreur spécifique,
+        avec les informations du client et des articles associés
+      parameters:
+      - description: ID du livreur
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Liste des commandes assignées
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: ID utilisateur invalide ou erreur lors de la récupération
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erreur serveur
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Liste les commandes assignées à un livreur
+      tags:
+      - commande
+  /dash/article/commande/commandeOuvert:
+    get:
+      description: Récupère toutes les commandes dont le statut est "ouvertes", avec
+        les informations du client et des articles associés
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Liste des commandes ouvertes
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Erreur lors de la récupération des commandes
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Liste les commandes ouvertes
+      tags:
+      - commande
+  /dash/article/list:
+    get:
+      consumes:
+      - application/json
+      description: Retourne une liste paginée d'images (5 par page).
+      parameters:
+      - description: Numéro de la page (commence à 1)
+        in: query
+        name: page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.ArticleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Récupérer les images d'articles
+      tags:
+      - article
+  /dash/article/panier/{id_client}/detail:
+    get:
+      consumes:
+      - application/json
+      description: Récupère tous les paniers ouverts (status_id = 4) pour un client
+        donné, avec la liste des articles associés.
+      parameters:
+      - description: ID du client
+        in: path
+        name: id_client
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Liste des paniers et articles du client
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: ID client invalide
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Impossible de récupérer les paniers
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Récupérer le détail du panier d'un client
+      tags:
+      - panier
+  /dash/article/panier/{id_panier}delete:
+    delete:
+      consumes:
+      - application/json
+      description: Supprime un panier par son ID. Si des articles sont liés, ils sont
+        également supprimés.
+      parameters:
+      - description: ID du panier à supprimer
+        in: path
+        name: id_panier
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Panier et articles supprimés avec succès
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: ID invalide
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Panier introuvable
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Erreur lors de la suppression du panier
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Supprimer un panier
+      tags:
+      - panier
+  /dash/article/panier/add:
+    post:
+      consumes:
+      - application/json
+      description: Crée un panier avec un status par défaut ("panier ouvert") et ajoute
+        un article avec la quantité spécifiée.
+      parameters:
+      - description: Payload pour créer un panier
+        in: body
+        name: panierData
+        required: true
+        schema:
+          $ref: '#/definitions/entities.PayloadPanier'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Panier créé avec succès
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Erreur de validation du payload
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erreur serveur ou transaction échouée
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Créer un panier et ajouter un article
+      tags:
+      - panier
+  /ddash/article/commande/add:
+    post:
+      consumes:
+      - application/json
+      description: Crée une nouvelle commande avec ses articles et envoie une notification
+        WS aux commerçants concernés
+      parameters:
+      - description: Liste des articles de la commande
+        in: body
+        name: payload
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/controller.ArticlePayload'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Commande créée avec succès, contient la commande et les articles
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Payload vide ou erreur lors de l'insertion
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erreur serveur lors de la création de la commande
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Ajouter une commande
+      tags:
+      - commande
+swagger: "2.0"

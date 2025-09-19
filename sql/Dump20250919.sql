@@ -65,7 +65,7 @@ CREATE TABLE `Article` (
   KEY `categorie_id` (`categorie_id`),
   CONSTRAINT `Article_ibfk_1` FOREIGN KEY (`commercant_id`) REFERENCES `Commercant` (`commercant_id`),
   CONSTRAINT `Article_ibfk_2` FOREIGN KEY (`categorie_id`) REFERENCES `Categorie` (`categorie_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -74,7 +74,7 @@ CREATE TABLE `Article` (
 
 LOCK TABLES `Article` WRITE;
 /*!40000 ALTER TABLE `Article` DISABLE KEYS */;
-INSERT INTO `Article` VALUES (1,'T-shirt rouge','T-shirt coton rouge',15000.00,50,1,1),(2,'Pantalon bleu','Pantalon jean bleu',35000.00,30,1,1),(3,'Sac à main','Sac en cuir noir',45000.00,20,2,2),(4,'Chaussures sport','Chaussures running',60000.00,15,1,3),(8,'\"testa\"','\"test description\"',123.00,5,1,1),(10,'\"testa\"','\"test description\"',123.00,5,1,1),(11,'\"testa\"','\"test description\"',123.00,5,1,1);
+INSERT INTO `Article` VALUES (1,'T-shirt rouge','T-shirt coton rouge',15000.00,50,1,1),(2,'Pantalon bleu','Pantalon jean bleu',35000.00,30,1,1),(3,'Sac à main','Sac en cuir noir',45000.00,20,2,2),(4,'Chaussures sport','Chaussures running',60000.00,15,1,3),(8,'\"testa\"','\"test description\"',123.00,5,1,1),(10,'\"testa\"','\"test description\"',123.00,5,1,1),(11,'\"testa\"','\"test description\"',123.00,5,1,1),(14,'','',323.00,2,1,1),(15,'sdfsdfdsf','tste',323.00,2,1,1);
 /*!40000 ALTER TABLE `Article` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -97,7 +97,7 @@ CREATE TABLE `Article_Image` (
   PRIMARY KEY (`image_id`),
   KEY `article_id` (`article_id`),
   CONSTRAINT `Article_Image_ibfk_1` FOREIGN KEY (`article_id`) REFERENCES `Article` (`article_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -106,7 +106,7 @@ CREATE TABLE `Article_Image` (
 
 LOCK TABLES `Article_Image` WRITE;
 /*!40000 ALTER TABLE `Article_Image` DISABLE KEYS */;
-INSERT INTO `Article_Image` VALUES (1,1,'/uploads/articles/1/tshirt_red_main.jpg',800,800,1,'main','L'),(2,1,'/uploads/articles/1/tshirt_red_2.jpg',600,600,2,'gallery','L'),(3,2,'/uploads/articles/2/pantalon_bleu_main.jpg',800,800,1,'main','M'),(4,3,'/uploads/articles/3/sac_main.jpg',800,800,1,'main','M'),(5,4,'/uploads/articles/4/chaussures_main.jpg',800,800,1,'main','M'),(6,8,'uploads/8_devant.jpg',0,0,1,'main','69 KB'),(7,10,'uploads/10_devant.jpg',500,600,0,'main','L'),(8,11,'uploads/11_devant.jpg',500,600,1,'main','L');
+INSERT INTO `Article_Image` VALUES (1,1,'/uploads/articles/1/tshirt_red_main.jpg',800,800,1,'main','L'),(2,1,'/uploads/articles/1/tshirt_red_2.jpg',600,600,2,'gallery','L'),(3,2,'/uploads/articles/2/pantalon_bleu_main.jpg',800,800,1,'main','M'),(4,3,'/uploads/articles/3/sac_main.jpg',800,800,1,'main','M'),(5,4,'/uploads/articles/4/chaussures_main.jpg',800,800,1,'main','M'),(6,8,'uploads/8_devant.jpg',0,0,1,'main','69 KB'),(7,10,'uploads/10_devant.jpg',500,600,0,'main','L'),(8,11,'uploads/11_devant.jpg',500,600,1,'main','L'),(9,14,'uploads/14_clavier_souris.jpeg',333,111,1,'main','222'),(10,15,'uploads/15_clavier_souris.jpeg',333,111,1,'main','222');
 /*!40000 ALTER TABLE `Article_Image` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -189,6 +189,7 @@ CREATE TABLE `Client` (
   `prenom` varchar(100) DEFAULT NULL,
   `email` varchar(150) NOT NULL,
   `telephone` varchar(50) DEFAULT NULL,
+  `adresse` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`client_id`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -200,7 +201,7 @@ CREATE TABLE `Client` (
 
 LOCK TABLES `Client` WRITE;
 /*!40000 ALTER TABLE `Client` DISABLE KEYS */;
-INSERT INTO `Client` VALUES (1,'Rakoto','Andry','andry@example.com','0341234567'),(2,'Rasoa','Mialy','mialy@example.com','0349876543');
+INSERT INTO `Client` VALUES (1,'Rakoto','Andry','andry@example.com','0341234567','Ankaraobato'),(2,'Rasoa','Mialy','mialy@example.com','0349876543','Ankaraobato');
 /*!40000 ALTER TABLE `Client` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -217,10 +218,14 @@ CREATE TABLE `Commande` (
   `date_commande` datetime DEFAULT CURRENT_TIMESTAMP,
   `montant_total` decimal(12,2) NOT NULL,
   `status_id` int DEFAULT NULL,
+  `livreur_assign` int DEFAULT NULL,
+  `lieux_livraison` varchar(100) DEFAULT NULL,
+  `latitude` varchar(45) DEFAULT NULL,
+  `longitude` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`commande_id`),
   KEY `client_id` (`client_id`),
   CONSTRAINT `Commande_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `Client` (`client_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -229,7 +234,7 @@ CREATE TABLE `Commande` (
 
 LOCK TABLES `Commande` WRITE;
 /*!40000 ALTER TABLE `Commande` DISABLE KEYS */;
-INSERT INTO `Commande` VALUES (1,1,'2025-08-20 09:22:04',75000.00,1);
+INSERT INTO `Commande` VALUES (1,1,'2025-08-20 09:22:04',75000.00,1,NULL,NULL,NULL,NULL),(2,1,'2025-09-01 00:00:00',14500.00,1,NULL,NULL,NULL,NULL),(3,1,'2025-09-01 00:00:00',14500.00,1,NULL,NULL,NULL,NULL),(4,1,'2025-09-01 00:00:00',14500.00,1,NULL,NULL,NULL,NULL),(5,1,'2025-09-01 00:00:00',14500.00,1,NULL,NULL,NULL,NULL),(6,1,'2025-09-01 00:00:00',14500.00,1,NULL,NULL,NULL,NULL),(7,1,'2025-09-01 00:00:00',14500.00,1,NULL,NULL,NULL,NULL),(8,1,'2025-09-01 00:00:00',14500.00,1,NULL,NULL,NULL,NULL),(9,1,'2025-09-01 00:00:00',14500.00,1,NULL,NULL,NULL,NULL),(10,1,'2025-09-01 00:00:00',14500.00,1,NULL,NULL,NULL,NULL),(11,1,'2025-09-01 00:00:00',14500.00,1,NULL,NULL,NULL,NULL),(12,1,'2025-09-01 00:00:00',14500.00,1,NULL,NULL,NULL,NULL),(13,1,'2025-09-01 00:00:00',14500.00,1,NULL,NULL,NULL,NULL),(14,1,'2025-09-01 00:00:00',14500.00,1,NULL,NULL,NULL,NULL),(15,1,'2025-09-01 00:00:00',14500.00,1,NULL,NULL,NULL,NULL),(16,1,'2025-09-02 00:00:00',14500.00,2,1,NULL,NULL,NULL),(17,1,'2025-09-10 00:00:00',400.00,1,0,'Andranomena','-18.8792','47.5079');
 /*!40000 ALTER TABLE `Commande` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -241,16 +246,17 @@ DROP TABLE IF EXISTS `Commande_Article`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Commande_Article` (
-  `commande_article_id` int NOT NULL,
+  `commande_article_id` int NOT NULL AUTO_INCREMENT,
   `Commande_id` int DEFAULT NULL,
   `article_id` int NOT NULL,
   `quantite` int NOT NULL,
   `prix_unitaire` decimal(10,2) NOT NULL,
   PRIMARY KEY (`commande_article_id`,`article_id`),
   KEY `article_id` (`article_id`),
-  CONSTRAINT `Commande_Article_ibfk_1` FOREIGN KEY (`commande_article_id`) REFERENCES `Commande` (`commande_id`),
+  KEY `Commande_Article_ibfk_1` (`Commande_id`),
+  CONSTRAINT `Commande_Article_ibfk_1` FOREIGN KEY (`Commande_id`) REFERENCES `Commande` (`commande_id`),
   CONSTRAINT `Commande_Article_ibfk_2` FOREIGN KEY (`article_id`) REFERENCES `Article` (`article_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -259,7 +265,7 @@ CREATE TABLE `Commande_Article` (
 
 LOCK TABLES `Commande_Article` WRITE;
 /*!40000 ALTER TABLE `Commande_Article` DISABLE KEYS */;
-INSERT INTO `Commande_Article` VALUES (1,NULL,1,2,15000.00),(1,NULL,3,1,45000.00);
+INSERT INTO `Commande_Article` VALUES (1,NULL,1,2,15000.00),(1,NULL,3,1,45000.00),(2,5,2,2,1000.00),(3,5,3,5,2500.00),(4,6,2,2,1000.00),(5,6,3,5,2500.00),(6,7,2,2,1000.00),(7,7,3,5,2500.00),(10,9,2,2,1000.00),(11,9,3,5,2500.00),(12,10,2,2,1000.00),(13,10,3,5,2500.00),(14,11,2,2,1000.00),(15,11,3,5,2500.00),(16,12,2,2,1000.00),(17,12,3,5,2500.00),(18,13,2,2,1000.00),(19,13,3,5,2500.00),(20,14,2,2,1000.00),(21,14,3,5,2500.00),(22,15,2,2,1000.00),(23,15,3,5,2500.00),(24,16,2,2,1000.00),(25,16,3,5,2500.00),(26,17,1,2,200.00);
 /*!40000 ALTER TABLE `Commande_Article` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -277,6 +283,8 @@ CREATE TABLE `Commercant` (
   `adresse` varchar(200) DEFAULT NULL,
   `telephone` varchar(50) DEFAULT NULL,
   `email` varchar(150) DEFAULT NULL,
+  `latitude` varchar(45) DEFAULT NULL,
+  `longitude` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`commercant_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -287,7 +295,7 @@ CREATE TABLE `Commercant` (
 
 LOCK TABLES `Commercant` WRITE;
 /*!40000 ALTER TABLE `Commercant` DISABLE KEYS */;
-INSERT INTO `Commercant` VALUES (1,'Boutique A','Vêtements','Antananarivo','0321234567','contact@boutiquea.mg'),(2,'Boutique B','Accessoires','Antsirabe','0329876543','contact@boutiqueb.mg');
+INSERT INTO `Commercant` VALUES (1,'Boutique A','Vêtements','Antananarivo','0321234567','contact@boutiquea.mg',NULL,NULL),(2,'Boutique B','Accessoires','Antsirabe','0329876543','contact@boutiqueb.mg',NULL,NULL);
 /*!40000 ALTER TABLE `Commercant` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -599,6 +607,8 @@ CREATE TABLE `user` (
   `contact` varchar(20) NOT NULL,
   `mail` varchar(150) NOT NULL,
   `adresse` text NOT NULL,
+  `latitude` varchar(45) DEFAULT NULL,
+  `longitude` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `login` (`login`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -610,7 +620,7 @@ CREATE TABLE `user` (
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
-INSERT INTO `user` VALUES (1,'hery','hery1234','Rasolonjatovo','Hery','','12345','hery@test.mg','ffdqfqfq'),(4,'testdddddddddd','testddddddddd','testname','testlast','test','1234','mail@gmail.com','adressetna');
+INSERT INTO `user` VALUES (1,'hery','hery1234','Rasolonjatovo','Hery','','12345','hery@test.mg','ffdqfqfq','-18.8692','47.5079'),(3,'kama','kely','kmajao','makaina','test','12345','kama@gmail.com','anakrao','-18.879','47.508'),(4,'testdddddddddd','testddddddddd','testname','testlast','test','1234','mail@gmail.com','adressetna','-18.8792','47.5180');
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -637,7 +647,7 @@ CREATE TABLE `userProfil` (
 
 LOCK TABLES `userProfil` WRITE;
 /*!40000 ALTER TABLE `userProfil` DISABLE KEYS */;
-INSERT INTO `userProfil` VALUES (1,1);
+INSERT INTO `userProfil` VALUES (1,2),(3,2),(4,2);
 /*!40000 ALTER TABLE `userProfil` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -650,4 +660,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-08-28 13:29:04
+-- Dump completed on 2025-09-19  9:54:08

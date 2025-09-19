@@ -1,0 +1,1134 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/admin/profil/assignProfil": {
+            "post": {
+                "description": "Permet d'associer un profil (client, commerçant, livreur, etc.) à un utilisateur existant",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profil"
+                ],
+                "summary": "Assigner un profil à un utilisateur",
+                "parameters": [
+                    {
+                        "description": "Données pour l’assignation du profil",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entities.PayloadAssignProfil"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Profil assigné avec succès",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Payload invalide",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erreur serveur",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/profil/list": {
+            "get": {
+                "description": "Retourne la liste complète des profils disponibles",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profil"
+                ],
+                "summary": "Récupérer la liste des profils",
+                "responses": {
+                    "200": {
+                        "description": "Liste des profils récupérée avec succès",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Aucun profil trouvé",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erreur lors de la récupération des profils",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/user/creatUser": {
+            "post": {
+                "description": "Creates a new user in the system within a transactional context.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create a new user",
+                "parameters": [
+                    {
+                        "description": "User creation payload",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entities.LoginStruct"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User created successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request data",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/user/updateUser": {
+            "put": {
+                "description": "Met à jour les informations d'un utilisateur existant",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Met à jour un utilisateur",
+                "parameters": [
+                    {
+                        "description": "Utilisateur à mettre à jour",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entities.LoginStruct"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Utilisateur mis à jour avec succès",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Erreur lors de la mise à jour",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/user/{idUser}/delete": {
+            "delete": {
+                "description": "Supprime un utilisateur en fonction de son identifiant (ID).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Supprimer un utilisateur",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de l'utilisateur",
+                        "name": "idUser",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Utilisateur introuvable",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "ID invalide",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erreur interne du serveur",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "description": "Authenticates a user using their login and password. Returns a JWT access token if successful.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "User login",
+                "parameters": [
+                    {
+                        "description": "Login payload",
+                        "name": "loginData",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entities.LoginData"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid login data or missing fields",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid login credentials",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "description": "Validates the Bearer token and logs the user out. The token should be removed on the client side.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Logout a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Déconnexion réussie",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Token manquant ou invalide",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "description": "Generates a new access token if the provided Bearer token is valid.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Refresh access token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer refresh token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Access token refreshed successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Token manquant ou invalide",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/dash/article/add": {
+            "post": {
+                "description": "Crée un article avec ses informations et une image associée",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "article"
+                ],
+                "summary": "Ajouter un nouvel article",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Nom de l'article",
+                        "name": "nom",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Description de l'article",
+                        "name": "description",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Prix de l'article",
+                        "name": "prix",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Quantité en stock",
+                        "name": "stock",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID du commerçant",
+                        "name": "commercant_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de la catégorie",
+                        "name": "categorie_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Largeur de l'image",
+                        "name": "largeur",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Hauteur de l'image",
+                        "name": "hauteur",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ordre de l'image",
+                        "name": "ordre",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Type de l'image (jpg, png, etc.)",
+                        "name": "type",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Taille de l'image",
+                        "name": "taille",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Fichier image à uploader",
+                        "name": "image",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Article créé avec succès",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Requête invalide ou image manquante",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erreur serveur lors de l'ajout de l'article",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/dash/article/categorie/list": {
+            "get": {
+                "description": "Récupère la liste des catégories disponibles",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categorie"
+                ],
+                "summary": "Liste des catégories",
+                "responses": {
+                    "200": {
+                        "description": "Liste des catégories ou tableau vide",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Erreur lors de la récupération",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/dash/article/commande/commandeAssign/{user_id}": {
+            "get": {
+                "description": "Récupère toutes les commandes ouvertes assignées à un livreur spécifique, avec les informations du client et des articles associés",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "commande"
+                ],
+                "summary": "Liste les commandes assignées à un livreur",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID du livreur",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Liste des commandes assignées",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "ID utilisateur invalide ou erreur lors de la récupération",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erreur serveur",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/dash/article/commande/commandeOuvert": {
+            "get": {
+                "description": "Récupère toutes les commandes dont le statut est \"ouvertes\", avec les informations du client et des articles associés",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "commande"
+                ],
+                "summary": "Liste les commandes ouvertes",
+                "responses": {
+                    "200": {
+                        "description": "Liste des commandes ouvertes",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Erreur lors de la récupération des commandes",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/dash/article/commande/{id_commande}/assign/{id_livreur}": {
+            "put": {
+                "description": "Met à jour une commande en assignant un livreur et en changeant son statut en \"EN COURS\"",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "commande"
+                ],
+                "summary": "Assigner une commande à un livreur",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la commande",
+                        "name": "id_commande",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID du livreur",
+                        "name": "id_livreur",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Commande assignée avec succès",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "ID commande ou livreur invalide",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erreur serveur lors de l'assignation",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/dash/article/list": {
+            "get": {
+                "description": "Retourne une liste paginée d'images (5 par page).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "article"
+                ],
+                "summary": "Récupérer les images d'articles",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Numéro de la page (commence à 1)",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/entities.ArticleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/dash/article/panier/add": {
+            "post": {
+                "description": "Crée un panier avec un status par défaut (\"panier ouvert\") et ajoute un article avec la quantité spécifiée.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "panier"
+                ],
+                "summary": "Créer un panier et ajouter un article",
+                "parameters": [
+                    {
+                        "description": "Payload pour créer un panier",
+                        "name": "panierData",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entities.PayloadPanier"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Panier créé avec succès",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Erreur de validation du payload",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erreur serveur ou transaction échouée",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/dash/article/panier/{id_client}/detail": {
+            "get": {
+                "description": "Récupère tous les paniers ouverts (status_id = 4) pour un client donné, avec la liste des articles associés.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "panier"
+                ],
+                "summary": "Récupérer le détail du panier d'un client",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID du client",
+                        "name": "id_client",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Liste des paniers et articles du client",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ID client invalide",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Impossible de récupérer les paniers",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/dash/article/panier/{id_panier}delete": {
+            "delete": {
+                "description": "Supprime un panier par son ID. Si des articles sont liés, ils sont également supprimés.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "panier"
+                ],
+                "summary": "Supprimer un panier",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID du panier à supprimer",
+                        "name": "id_panier",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Panier et articles supprimés avec succès",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "ID invalide",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Panier introuvable",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Erreur lors de la suppression du panier",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/dash/article/{id}/delete": {
+            "delete": {
+                "description": "Supprime un article en fonction de son ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "article"
+                ],
+                "summary": "Supprimer un article",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de l'article",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Article supprimé avec succès",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "ID invalide",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Article introuvable",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erreur serveur",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/ddash/article/commande/add": {
+            "post": {
+                "description": "Crée une nouvelle commande avec ses articles et envoie une notification WS aux commerçants concernés",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "commande"
+                ],
+                "summary": "Ajouter une commande",
+                "parameters": [
+                    {
+                        "description": "Liste des articles de la commande",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/controller.ArticlePayload"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Commande créée avec succès, contient la commande et les articles",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Payload vide ou erreur lors de l'insertion",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erreur serveur lors de la création de la commande",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "controller.ArticlePayload": {
+            "type": "object",
+            "properties": {
+                "article_id": {
+                    "type": "integer"
+                },
+                "client_id": {
+                    "type": "integer"
+                },
+                "prix_unitaire": {
+                    "type": "number"
+                },
+                "quantite": {
+                    "type": "integer"
+                }
+            }
+        },
+        "entities.ArticleImage": {
+            "type": "object",
+            "properties": {
+                "article_id": {
+                    "type": "integer"
+                },
+                "hauteur": {
+                    "type": "integer"
+                },
+                "image_id": {
+                    "type": "integer"
+                },
+                "largeur": {
+                    "type": "integer"
+                },
+                "order": {
+                    "type": "integer"
+                },
+                "taille": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.ArticleResponse": {
+            "type": "object",
+            "properties": {
+                "article_id": {
+                    "type": "integer"
+                },
+                "categorie": {
+                    "$ref": "#/definitions/entities.Categorie"
+                },
+                "commercant": {
+                    "$ref": "#/definitions/entities.Commercant"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "images": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entities.ArticleImage"
+                    }
+                },
+                "nom": {
+                    "type": "string"
+                },
+                "prix": {
+                    "type": "number"
+                },
+                "stock": {
+                    "type": "integer"
+                }
+            }
+        },
+        "entities.Categorie": {
+            "type": "object",
+            "properties": {
+                "categorie_id": {
+                    "type": "integer"
+                },
+                "nom": {
+                    "type": "string"
+                },
+                "parent_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "entities.Commercant": {
+            "type": "object",
+            "properties": {
+                "adresse": {
+                    "type": "string"
+                },
+                "commercant_id": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "nom": {
+                    "type": "string"
+                },
+                "telephone": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.LoginData": {
+            "type": "object",
+            "properties": {
+                "login": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.LoginStruct": {
+            "type": "object",
+            "properties": {
+                "adresse": {
+                    "type": "string"
+                },
+                "contact": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "lastname": {
+                    "type": "string"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "mail": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.PayloadAssignProfil": {
+            "type": "object",
+            "properties": {
+                "idProfil": {
+                    "type": "integer"
+                },
+                "idUser": {
+                    "type": "integer"
+                }
+            }
+        },
+        "entities.PayloadPanier": {
+            "type": "object",
+            "properties": {
+                "article_id": {
+                    "type": "integer"
+                },
+                "client_id": {
+                    "type": "integer"
+                },
+                "quantite": {
+                    "type": "integer"
+                }
+            }
+        }
+    }
+}
