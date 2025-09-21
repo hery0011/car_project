@@ -3,10 +3,14 @@ package controller
 import (
 	"car_project/internal/elastic"
 	"car_project/internal/entities"
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -119,7 +123,7 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 // @Param ordre formData int false "Ordre de l'image"
 // @Param type formData string false "Type de l'image (jpg, png, etc.)"
 // @Param taille formData string false "Taille de l'image"
-// @Param image formData file true "Fichier image à uploader"
+// @Param image formData string true "Image encodée en base64"
 // @Success 200 {object} map[string]interface{} "Article créé avec succès"
 // @Failure 400 {object} map[string]interface{} "Requête invalide ou image manquante"
 // @Failure 500 {object} map[string]interface{} "Erreur serveur lors de l'ajout de l'article"
@@ -146,12 +150,28 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 	article.Commercant_id = commercantID
 	article.Categorie_id = categorieID
 
-	// Fichier image
-	file, err := c.FormFile("image")
-	if err != nil {
+	// Récupérer l'image encodée en base64
+	base64Image := c.PostForm("image")
+	if base64Image == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
 			"message": "Image is required",
+		})
+		return
+	}
+
+	// Décoder la chaîne base64
+	// Gérer le préfixe (ex: "data:image/png;base64,")
+	coI := strings.Index(base64Image, ",")
+	if coI != -1 {
+		base64Image = base64Image[coI+1:]
+	}
+
+	imgData, err := base64.StdEncoding.DecodeString(base64Image)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "Invalid base64 image data",
 			"error":   err.Error(),
 		})
 		return
@@ -171,11 +191,15 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 		return
 	}
 
-	// Définir le chemin du fichier (uploads/ + nom original)
-	filePath := fmt.Sprintf("uploads/%d_%s", article.Article_id, file.Filename)
+	// Générer un nom de fichier unique
+	// Assurez-vous que le dossier "uploads" existe
+	if _, err := os.Stat("uploads"); os.IsNotExist(err) {
+		os.Mkdir("uploads", os.ModePerm)
+	}
+	fileName := fmt.Sprintf("uploads/%d.%s", article.Article_id, imageType)
 
-	// Sauvegarde dans uploads/
-	if err := c.SaveUploadedFile(file, filePath); err != nil {
+	// Sauvegarder les données de l'image dans un fichier
+	if err := ioutil.WriteFile(fileName, imgData, 0644); err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save image", "error": err.Error()})
 		return
@@ -184,7 +208,7 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 	// Insérer dans Article_Image
 	imageRecord := entities.ArticleImage{
 		Article_id: article.Article_id,
-		Url:        filePath,
+		Url:        fileName, // Utiliser le nouveau nom de fichier
 		Largeur:    largeur,
 		Hauteur:    hauteur,
 		Ordre:      ordre,
