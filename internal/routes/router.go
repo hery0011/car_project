@@ -21,8 +21,12 @@ func GetRoutes(apiAddress string) {
 	router := gin.Default()
 	router.Use(cors.New(middleware.Cors()))
 
+	router.Static("/uploads", "./uploads")
+
 	// Route Swagger UI
 	router.GET(config.SwaggerPath, ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	router.GET("/categories/list", cHandler.ListCategories)
 
 	authGroup := router.Group(config.AuthPath)
 	{
@@ -49,7 +53,7 @@ func GetRoutes(apiAddress string) {
 
 	dashboardGroup := router.Group(config.DashPath)
 	{
-		articleGroup := dashboardGroup.Group(config.ArticlePath, jwt.AuthMiddleware())
+		articleGroup := dashboardGroup.Group(config.ArticlePath)
 		{
 			articleGroup.GET(config.ListArticle, cHandler.ListArticle)
 			articleGroup.POST(config.AddArticle, cHandler.AjoutArticle)

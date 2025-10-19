@@ -102,6 +102,59 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 	})
 }
 
+
+
+func (h *livraisonHandler) ListCategories(c *gin.Context) {
+    var categories []entities.Categorie
+
+    // Charger toutes les catégories
+    if err := h.db.Find(&categories).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "status":  http.StatusInternalServerError,
+            "message": "Erreur lors de la récupération des catégories",
+            "error":   err.Error(),
+        })
+        return
+    }
+
+    // Construire la map pour accès rapide par ID
+    categoryMap := make(map[int]*entities.CategoryResponse)
+    var roots []*entities.CategoryResponse
+
+    for _, cat := range categories {
+        categoryMap[cat.Categorie_id] = &entities.CategoryResponse{
+            CategoryId:    uint(cat.Categorie_id),
+            Nom:           cat.Nom,
+            ImageUrl:      cat.ImageUrl,
+            SubCategories: []*entities.CategoryResponse{},
+        }
+    }
+
+    // Construire la hiérarchie parent/enfant
+    for _, cat := range categories {
+        cr := categoryMap[cat.Categorie_id]
+        if cat.Parent_id != 0 {
+            parent := categoryMap[cat.Parent_id]
+            if parent != nil {
+                parent.SubCategories = append(parent.SubCategories, cr)
+            }
+        } else {
+            roots = append(roots, cr)
+        }
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "status":  http.StatusOK,
+        "message": "Liste des catégories récupérée avec succès",
+        "count":   len(roots),
+        "data":    roots,
+    })
+}
+
+
+
+
+
 // AjoutArticle godoc
 // @Summary Ajouter un nouvel article
 // @Description Crée un article avec ses informations et une image associée
