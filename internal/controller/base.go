@@ -30,6 +30,7 @@ type LivraisonHandler interface {
 	ListeCommandeAssign(*gin.Context)
 	ChercheCommercant(*gin.Context)
 	ListCategories(*gin.Context)
+	GetArticleDetail(*gin.Context)
 }
 
 type livraisonHandler struct {

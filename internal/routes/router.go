@@ -26,7 +26,11 @@ func GetRoutes(apiAddress string) {
 	// Route Swagger UI
 	router.GET(config.SwaggerPath, ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	// Public routes
+	// --------------------------------------------------
 	router.GET("/categories/list", cHandler.ListCategories)
+	router.GET("/articles/:id", cHandler.GetArticleDetail)
+	// --------------------------------------------------
 
 	authGroup := router.Group(config.AuthPath)
 	{

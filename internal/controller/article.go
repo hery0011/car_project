@@ -7,7 +7,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-
+	"gorm.io/gorm"
+	"errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -102,6 +103,73 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 	})
 }
 
+// GetArticleDetail godoc
+// @Summary Récupérer les détails d'un article
+// @Description Retourne les informations détaillées d'un article (images, catégorie, commerçant)
+// @Tags article
+// @Accept json
+// @Produce json
+// @Param id path int true "ID de l'article"
+// @Success 200 {object} entities.ArticleResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /dash/article/{id} [get]
+func (h *livraisonHandler) GetArticleDetail(c *gin.Context) {
+    // Récupérer l'ID depuis l'URL
+    idParam := c.Param("id")
+    id, err := strconv.Atoi(idParam)
+    if err != nil || id <= 0 {
+        c.JSON(http.StatusBadRequest, gin.H{
+            "status":  http.StatusBadRequest,
+            "message": "ID d'article invalide",
+        })
+        return
+    }
+
+    var article entities.Article
+
+    // Rechercher l'article avec les relations
+    if err := h.db.
+        Preload("Images").
+        Preload("Categorie").
+        Preload("Commercant").
+        First(&article, "article_id = ?", id).Error; err != nil {
+
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            c.JSON(http.StatusNotFound, gin.H{
+                "status":  http.StatusNotFound,
+                "message": "Article non trouvé",
+            })
+        } else {
+            c.JSON(http.StatusInternalServerError, gin.H{
+                "status":  http.StatusInternalServerError,
+                "message": "Erreur lors de la récupération de l'article",
+                "error":   err.Error(),
+            })
+        }
+        return
+    }
+
+    // Transformer en ArticleResponse
+    response := entities.ArticleResponse{
+        ArticleID:   article.Article_id,
+        Nom:         article.Nom,
+        Description: article.Description,
+        Prix:        article.Prix,
+        Stock:       article.Stock,
+        Categorie:   article.Categorie,
+        Commercant:  article.Commercant,
+        Images:      article.Images,
+    }
+
+    // Réponse finale
+    c.JSON(http.StatusOK, gin.H{
+        "status":  http.StatusOK,
+        "message": "Détails de l'article récupérés avec succès",
+        "data":    response,
+    })
+}
 
 
 func (h *livraisonHandler) ListCategories(c *gin.Context) {
