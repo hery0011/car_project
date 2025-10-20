@@ -69,10 +69,28 @@ func (h *livraisonHandler) Login(c *gin.Context) {
 		return
 	}
 
+	userResp := entities.UserResponse{
+					Id:        user.Id,
+					Login:     user.Login,
+					Name:      user.Name,
+					Lastname:  user.Lastname,
+					Type:      user.Type,
+					Contact:   user.Contact,
+					Mail:      user.Mail,
+					Adresse:   user.Adresse,
+					Latitude:  user.Latitude,
+					Longitude: user.Longitude,
+				}
+
+	response := entities.LoginResponse{
+					AccessToken: accessToken,
+					User:        userResp,
+				}
+
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
 		"message": "Login successful",
-		"data":    gin.H{"access_token": accessToken},
+		"data":    response,
 	})
 }
 
