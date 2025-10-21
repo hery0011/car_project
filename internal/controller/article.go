@@ -7,7 +7,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-
+	"gorm.io/gorm"
+	"errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -101,6 +102,126 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 		"data":       response,
 	})
 }
+
+// GetArticleDetail godoc
+// @Summary Récupérer les détails d'un article
+// @Description Retourne les informations détaillées d'un article (images, catégorie, commerçant)
+// @Tags article
+// @Accept json
+// @Produce json
+// @Param id path int true "ID de l'article"
+// @Success 200 {object} entities.ArticleResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /dash/article/{id} [get]
+func (h *livraisonHandler) GetArticleDetail(c *gin.Context) {
+    // Récupérer l'ID depuis l'URL
+    idParam := c.Param("id")
+    id, err := strconv.Atoi(idParam)
+    if err != nil || id <= 0 {
+        c.JSON(http.StatusBadRequest, gin.H{
+            "status":  http.StatusBadRequest,
+            "message": "ID d'article invalide",
+        })
+        return
+    }
+
+    var article entities.Article
+
+    // Rechercher l'article avec les relations
+    if err := h.db.
+        Preload("Images").
+        Preload("Categorie").
+        Preload("Commercant").
+        First(&article, "article_id = ?", id).Error; err != nil {
+
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            c.JSON(http.StatusNotFound, gin.H{
+                "status":  http.StatusNotFound,
+                "message": "Article non trouvé",
+            })
+        } else {
+            c.JSON(http.StatusInternalServerError, gin.H{
+                "status":  http.StatusInternalServerError,
+                "message": "Erreur lors de la récupération de l'article",
+                "error":   err.Error(),
+            })
+        }
+        return
+    }
+
+    // Transformer en ArticleResponse
+    response := entities.ArticleResponse{
+        ArticleID:   article.Article_id,
+        Nom:         article.Nom,
+        Description: article.Description,
+        Prix:        article.Prix,
+        Stock:       article.Stock,
+        Categorie:   article.Categorie,
+        Commercant:  article.Commercant,
+        Images:      article.Images,
+    }
+
+    // Réponse finale
+    c.JSON(http.StatusOK, gin.H{
+        "status":  http.StatusOK,
+        "message": "Détails de l'article récupérés avec succès",
+        "data":    response,
+    })
+}
+
+
+func (h *livraisonHandler) ListCategories(c *gin.Context) {
+    var categories []entities.Categorie
+
+    // Charger toutes les catégories
+    if err := h.db.Find(&categories).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "status":  http.StatusInternalServerError,
+            "message": "Erreur lors de la récupération des catégories",
+            "error":   err.Error(),
+        })
+        return
+    }
+
+    // Construire la map pour accès rapide par ID
+    categoryMap := make(map[int]*entities.CategoryResponse)
+    var roots []*entities.CategoryResponse
+
+    for _, cat := range categories {
+        categoryMap[cat.Categorie_id] = &entities.CategoryResponse{
+            CategoryId:    uint(cat.Categorie_id),
+            Nom:           cat.Nom,
+            ImageUrl:      cat.ImageUrl,
+            SubCategories: []*entities.CategoryResponse{},
+        }
+    }
+
+    // Construire la hiérarchie parent/enfant
+    for _, cat := range categories {
+        cr := categoryMap[cat.Categorie_id]
+        if cat.Parent_id != 0 {
+            parent := categoryMap[cat.Parent_id]
+            if parent != nil {
+                parent.SubCategories = append(parent.SubCategories, cr)
+            }
+        } else {
+            roots = append(roots, cr)
+        }
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "status":  http.StatusOK,
+        "message": "Liste des catégories récupérée avec succès",
+        "count":   len(roots),
+        "data":    roots,
+    })
+}
+
+
+
+
 
 // AjoutArticle godoc
 // @Summary Ajouter un nouvel article

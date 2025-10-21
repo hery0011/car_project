@@ -37,6 +37,24 @@ type SessionData struct {
 	User LoginStruct `json:"user"`
 }
 
+type UserResponse struct {
+	Id        int     `json:"id"`
+	Login     string  `json:"login"`
+	Name      string  `json:"name"`
+	Lastname  string  `json:"lastname"`
+	Type      string  `json:"type"`
+	Contact   string  `json:"contact"`
+	Mail      string  `json:"mail"`
+	Adresse   string  `json:"adresse"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+}
+
+type LoginResponse struct {
+	AccessToken string      `json:"access_token"`
+	User        UserResponse `json:"user"`
+}
+
 type LoginData struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`

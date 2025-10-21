@@ -30,7 +30,7 @@ type Article struct {
 }
 
 type ArticleResponse struct {
-	ArticleID   int            `json:"article_id"`
+	ArticleID   int            `json:"id"`
 	Nom         string         `json:"nom"`
 	Description string         `json:"description"`
 	Prix        float64        `json:"prix"`
