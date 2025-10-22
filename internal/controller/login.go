@@ -52,7 +52,7 @@ func (h *livraisonHandler) Login(c *gin.Context) {
 	}
 
 	var user entities.LoginStruct
-	if err := h.db.Where("mail = ?", loginData.Login).First(&user).Error; err != nil {
+	if err := h.db.Where("mail = ? and password = ?", loginData.Login, loginData.Password).First(&user).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  http.StatusUnauthorized,
 			"message": "Invalid login credentials",
