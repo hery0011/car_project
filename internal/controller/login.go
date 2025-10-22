@@ -52,7 +52,7 @@ func (h *livraisonHandler) Login(c *gin.Context) {
 	}
 
 	var user entities.LoginStruct
-	if err := h.db.Where("login = ?", loginData.Login).First(&user).Error; err != nil {
+	if err := h.db.Where("mail = ?", loginData.Login).First(&user).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  http.StatusUnauthorized,
 			"message": "Invalid login credentials",
@@ -70,22 +70,22 @@ func (h *livraisonHandler) Login(c *gin.Context) {
 	}
 
 	userResp := entities.UserResponse{
-					Id:        user.Id,
-					Login:     user.Login,
-					Name:      user.Name,
-					Lastname:  user.Lastname,
-					Type:      user.Type,
-					Contact:   user.Contact,
-					Mail:      user.Mail,
-					Adresse:   user.Adresse,
-					Latitude:  user.Latitude,
-					Longitude: user.Longitude,
-				}
+		Id:        user.Id,
+		Login:     user.Login,
+		Name:      user.Name,
+		Lastname:  user.Lastname,
+		Type:      user.Type,
+		Contact:   user.Contact,
+		Mail:      user.Mail,
+		Adresse:   user.Adresse,
+		Latitude:  user.Latitude,
+		Longitude: user.Longitude,
+	}
 
 	response := entities.LoginResponse{
-					AccessToken: accessToken,
-					User:        userResp,
-				}
+		AccessToken: accessToken,
+		User:        userResp,
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,

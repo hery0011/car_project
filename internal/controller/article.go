@@ -3,13 +3,18 @@ package controller
 import (
 	"car_project/internal/elastic"
 	"car_project/internal/entities"
+	"encoding/base64"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
-	"gorm.io/gorm"
-	"errors"
+	"strings"
+
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // GetArticleImages godoc
@@ -116,112 +121,107 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 // @Failure 500 {object} map[string]string
 // @Router /dash/article/{id} [get]
 func (h *livraisonHandler) GetArticleDetail(c *gin.Context) {
-    // Récupérer l'ID depuis l'URL
-    idParam := c.Param("id")
-    id, err := strconv.Atoi(idParam)
-    if err != nil || id <= 0 {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "status":  http.StatusBadRequest,
-            "message": "ID d'article invalide",
-        })
-        return
-    }
+	// Récupérer l'ID depuis l'URL
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "ID d'article invalide",
+		})
+		return
+	}
 
-    var article entities.Article
+	var article entities.Article
 
-    // Rechercher l'article avec les relations
-    if err := h.db.
-        Preload("Images").
-        Preload("Categorie").
-        Preload("Commercant").
-        First(&article, "article_id = ?", id).Error; err != nil {
+	// Rechercher l'article avec les relations
+	if err := h.db.
+		Preload("Images").
+		Preload("Categorie").
+		Preload("Commercant").
+		First(&article, "article_id = ?", id).Error; err != nil {
 
-        if errors.Is(err, gorm.ErrRecordNotFound) {
-            c.JSON(http.StatusNotFound, gin.H{
-                "status":  http.StatusNotFound,
-                "message": "Article non trouvé",
-            })
-        } else {
-            c.JSON(http.StatusInternalServerError, gin.H{
-                "status":  http.StatusInternalServerError,
-                "message": "Erreur lors de la récupération de l'article",
-                "error":   err.Error(),
-            })
-        }
-        return
-    }
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status":  http.StatusNotFound,
+				"message": "Article non trouvé",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  http.StatusInternalServerError,
+				"message": "Erreur lors de la récupération de l'article",
+				"error":   err.Error(),
+			})
+		}
+		return
+	}
 
-    // Transformer en ArticleResponse
-    response := entities.ArticleResponse{
-        ArticleID:   article.Article_id,
-        Nom:         article.Nom,
-        Description: article.Description,
-        Prix:        article.Prix,
-        Stock:       article.Stock,
-        Categorie:   article.Categorie,
-        Commercant:  article.Commercant,
-        Images:      article.Images,
-    }
+	// Transformer en ArticleResponse
+	response := entities.ArticleResponse{
+		ArticleID:   article.Article_id,
+		Nom:         article.Nom,
+		Description: article.Description,
+		Prix:        article.Prix,
+		Stock:       article.Stock,
+		Categorie:   article.Categorie,
+		Commercant:  article.Commercant,
+		Images:      article.Images,
+	}
 
-    // Réponse finale
-    c.JSON(http.StatusOK, gin.H{
-        "status":  http.StatusOK,
-        "message": "Détails de l'article récupérés avec succès",
-        "data":    response,
-    })
+	// Réponse finale
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "Détails de l'article récupérés avec succès",
+		"data":    response,
+	})
 }
-
 
 func (h *livraisonHandler) ListCategories(c *gin.Context) {
-    var categories []entities.Categorie
+	var categories []entities.Categorie
 
-    // Charger toutes les catégories
-    if err := h.db.Find(&categories).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{
-            "status":  http.StatusInternalServerError,
-            "message": "Erreur lors de la récupération des catégories",
-            "error":   err.Error(),
-        })
-        return
-    }
+	// Charger toutes les catégories
+	if err := h.db.Find(&categories).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Erreur lors de la récupération des catégories",
+			"error":   err.Error(),
+		})
+		return
+	}
 
-    // Construire la map pour accès rapide par ID
-    categoryMap := make(map[int]*entities.CategoryResponse)
-    var roots []*entities.CategoryResponse
+	// Construire la map pour accès rapide par ID
+	categoryMap := make(map[int]*entities.CategoryResponse)
+	var roots []*entities.CategoryResponse
 
-    for _, cat := range categories {
-        categoryMap[cat.Categorie_id] = &entities.CategoryResponse{
-            CategoryId:    uint(cat.Categorie_id),
-            Nom:           cat.Nom,
-            ImageUrl:      cat.ImageUrl,
-            SubCategories: []*entities.CategoryResponse{},
-        }
-    }
+	for _, cat := range categories {
+		categoryMap[cat.Categorie_id] = &entities.CategoryResponse{
+			CategoryId:    uint(cat.Categorie_id),
+			Nom:           cat.Nom,
+			ImageUrl:      cat.ImageUrl,
+			SubCategories: []*entities.CategoryResponse{},
+		}
+	}
 
-    // Construire la hiérarchie parent/enfant
-    for _, cat := range categories {
-        cr := categoryMap[cat.Categorie_id]
-        if cat.Parent_id != 0 {
-            parent := categoryMap[cat.Parent_id]
-            if parent != nil {
-                parent.SubCategories = append(parent.SubCategories, cr)
-            }
-        } else {
-            roots = append(roots, cr)
-        }
-    }
+	// Construire la hiérarchie parent/enfant
+	for _, cat := range categories {
+		cr := categoryMap[cat.Categorie_id]
+		if cat.Parent_id != 0 {
+			parent := categoryMap[cat.Parent_id]
+			if parent != nil {
+				parent.SubCategories = append(parent.SubCategories, cr)
+			}
+		} else {
+			roots = append(roots, cr)
+		}
+	}
 
-    c.JSON(http.StatusOK, gin.H{
-        "status":  http.StatusOK,
-        "message": "Liste des catégories récupérée avec succès",
-        "count":   len(roots),
-        "data":    roots,
-    })
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "Liste des catégories récupérée avec succès",
+		"count":   len(roots),
+		"data":    roots,
+	})
 }
-
-
-
-
 
 // AjoutArticle godoc
 // @Summary Ajouter un nouvel article
@@ -240,7 +240,7 @@ func (h *livraisonHandler) ListCategories(c *gin.Context) {
 // @Param ordre formData int false "Ordre de l'image"
 // @Param type formData string false "Type de l'image (jpg, png, etc.)"
 // @Param taille formData string false "Taille de l'image"
-// @Param image formData file true "Fichier image à uploader"
+// @Param image formData string true "Image encodée en base64"
 // @Success 200 {object} map[string]interface{} "Article créé avec succès"
 // @Failure 400 {object} map[string]interface{} "Requête invalide ou image manquante"
 // @Failure 500 {object} map[string]interface{} "Erreur serveur lors de l'ajout de l'article"
@@ -267,12 +267,28 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 	article.Commercant_id = commercantID
 	article.Categorie_id = categorieID
 
-	// Fichier image
-	file, err := c.FormFile("image")
-	if err != nil {
+	// Récupérer l'image encodée en base64
+	base64Image := c.PostForm("image")
+	if base64Image == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
 			"message": "Image is required",
+		})
+		return
+	}
+
+	// Décoder la chaîne base64
+	// Gérer le préfixe (ex: "data:image/png;base64,")
+	coI := strings.Index(base64Image, ",")
+	if coI != -1 {
+		base64Image = base64Image[coI+1:]
+	}
+
+	imgData, err := base64.StdEncoding.DecodeString(base64Image)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "Invalid base64 image data",
 			"error":   err.Error(),
 		})
 		return
@@ -292,11 +308,15 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 		return
 	}
 
-	// Définir le chemin du fichier (uploads/ + nom original)
-	filePath := fmt.Sprintf("uploads/%d_%s", article.Article_id, file.Filename)
+	// Générer un nom de fichier unique
+	// Assurez-vous que le dossier "uploads" existe
+	if _, err := os.Stat("uploads"); os.IsNotExist(err) {
+		os.Mkdir("uploads", os.ModePerm)
+	}
+	fileName := fmt.Sprintf("uploads/%d.%s", article.Article_id, imageType)
 
-	// Sauvegarde dans uploads/
-	if err := c.SaveUploadedFile(file, filePath); err != nil {
+	// Sauvegarder les données de l'image dans un fichier
+	if err := ioutil.WriteFile(fileName, imgData, 0644); err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save image", "error": err.Error()})
 		return
@@ -305,7 +325,7 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 	// Insérer dans Article_Image
 	imageRecord := entities.ArticleImage{
 		Article_id: article.Article_id,
-		Url:        filePath,
+		Url:        fileName, // Utiliser le nouveau nom de fichier
 		Largeur:    largeur,
 		Hauteur:    hauteur,
 		Ordre:      ordre,
