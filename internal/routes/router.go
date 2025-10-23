@@ -3,12 +3,9 @@ package routes
 import (
 	"car_project/internal/config"
 	"car_project/internal/controller"
-	"car_project/internal/elastic"
 	"car_project/internal/jwt"
 	"car_project/internal/middleware"
 	"car_project/internal/ws"
-	"log"
-	"strconv"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -79,25 +76,6 @@ func GetRoutes(apiAddress string) {
 			{
 				commercantGroup.POST(config.ChercheCommercant, cHandler.ChercheCommercant)
 			}
-
-			//exemple route
-			//http://localhost:8082/dash/article/search/advanced?nom=sdfsdfdsf
-			articleGroup.GET("/search/advanced", func(c *gin.Context) {
-				nom := c.Query("nom")
-				categorie := c.Query("categorie")
-				commercant := c.Query("commercant")
-				prixMin, _ := strconv.ParseFloat(c.Query("prix_min"), 64)
-				prixMax, _ := strconv.ParseFloat(c.Query("prix_max"), 64)
-				stockMin, _ := strconv.Atoi(c.Query("stock_min"))
-
-				results, err := elastic.SearchArticlesAdvanced(nom, categorie, commercant, prixMin, prixMax, stockMin)
-				if err != nil {
-					log.Println("Erreur lors de la recherche Elasticsearch:", err)
-					c.JSON(500, gin.H{"error": err.Error()})
-					return
-				}
-				c.JSON(200, results)
-			})
 
 		}
 

@@ -1,10 +1,8 @@
 package controller
 
 import (
-	"car_project/internal/elastic"
 	"car_project/internal/entities"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -202,28 +200,6 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit transaction", "error": err.Error()})
 		return
-	}
-
-	var fullArticle entities.Article
-	if err := h.db.Preload("Categorie").Preload("Commercant").Preload("Images").
-		First(&fullArticle, article.Article_id).Error; err != nil {
-		log.Println("Erreur lors du chargement des relations:", err)
-	} else {
-		response := entities.ArticleResponse{
-			ArticleID:   fullArticle.Article_id,
-			Nom:         fullArticle.Nom,
-			Description: fullArticle.Description,
-			Prix:        fullArticle.Prix,
-			Stock:       fullArticle.Stock,
-			Categorie:   fullArticle.Categorie,
-			Commercant:  fullArticle.Commercant,
-			Images:      fullArticle.Images,
-		}
-
-		// 🔥 Indexation dans Elasticsearch
-		if err := elastic.IndexArticle(response); err != nil {
-			log.Println("Erreur d'indexation Elasticsearch:", err)
-		}
 	}
 
 	// Succès
