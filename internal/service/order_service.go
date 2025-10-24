@@ -27,8 +27,8 @@ func (s *OrderService) CreateOrder(userID int, address *entities.Address, items 
 	}
 
 	// Création adresse si inexistante
-	if address.AddressID == 0 {
-		address.UserID = userID
+	if address.AdresseID == 0 {
+		address.ClientID = userID
 		if err := tx.Create(address).Error; err != nil {
 			tx.Rollback()
 			return nil, err
@@ -37,7 +37,7 @@ func (s *OrderService) CreateOrder(userID int, address *entities.Address, items 
 
 	order := &entities.Order{
 		UserID:    userID,
-		AddressID: address.AddressID,
+		AddressID: address.AdresseID,
 		Status:    "pending",
 		CreatedAt: time.Now(),
 	}
