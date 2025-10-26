@@ -2,7 +2,6 @@ package controller
 
 import (
 	"net/http"
-	"strconv"
 
 	"car_project/internal/entities"
 	"car_project/internal/service"
@@ -49,19 +48,84 @@ func (h *livraisonHandler) GetTickets(c *gin.Context) {
 	c.JSON(http.StatusOK, tickets)
 }
 
-// PUT /tickets/:id
-func (h *DeliveryHandler) UpdateTicket(c *gin.Context) {
-	ticketID, _ := strconv.Atoi(c.Param("id"))
-	var payload map[string]interface{}
-	if err := c.ShouldBindJSON(&payload); err != nil {
+type UpdateTicketInput struct {
+	NomTicket     string   `json:"nom_ticket"`
+	DeliveryPrice *float64 `json:"delivery_price"`
+	StatusID      int      `json:"status_id"`
+}
+
+func (h *livraisonHandler) UpdateTicket(c *gin.Context) {
+	var input UpdateTicketInput
+	id := c.Param("id")
+
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := h.service.UpdateTicket(ticketID, payload); err != nil {
+	var ticket entities.DeliveryTicket
+	if err := h.db.First(&ticket, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "ticket not found"})
+		return
+	}
+
+	ticket.NomTicket = input.NomTicket
+	ticket.DeliveryPrice = input.DeliveryPrice
+	ticket.StatusID = input.StatusID
+
+	if err := h.db.Save(&ticket).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Ticket mis à jour"})
+	c.JSON(http.StatusOK, ticket)
+}
+
+type AssignTicketInput struct {
+	AssignedTo int `json:"assigned_to"`
+}
+
+func (h *livraisonHandler) AssignTicket(c *gin.Context) {
+
+	sessionInterface, exists := c.Get("sessionData")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilisateur non authentifié"})
+		return
+	}
+	sessionData, ok := sessionInterface.(entities.SessionData)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Impossible de récupérer la session utilisateur"})
+		return
+	}
+	userID := sessionData.User.Id
+
+	var input AssignTicketInput
+	id := c.Param("id")
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var ticket entities.DeliveryTicket
+	if err := h.db.First(&ticket, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "ticket not found"})
+		return
+	}
+
+	ticket.AssignedTo = &userID
+
+	var status entities.DeliveryTicketStatus
+	if err := h.db.Where("code = ?", "assigned").First(&status).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Impossible de récupérer le statut assigned"})
+		return
+	}
+	ticket.StatusID = status.ID
+
+	if err := h.db.Save(&ticket).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, ticket)
 }

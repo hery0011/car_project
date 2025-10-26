@@ -32,6 +32,13 @@ func GetRoutes(apiAddress string) {
 	r.GET("", cHandler.GetTickets)
 	// --------------------------------------------------
 
+	routeDelivery := router.Group("/api/delivery", jwt.AuthMiddleware())
+	{
+		routeDelivery.GET("/tickets", cHandler.GetTickets)
+		routeDelivery.PUT("/tickets/:id", cHandler.UpdateTicket)        // pour éditer
+		routeDelivery.PUT("/tickets/:id/assign", cHandler.AssignTicket) // pour assigner
+	}
+
 	router.GET("/orders/list", jwt.AuthMiddleware(), cHandler.ListOrders)
 
 	authGroup := router.Group(config.AuthPath)
