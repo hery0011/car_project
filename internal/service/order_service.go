@@ -52,6 +52,7 @@ func (s *OrderService) CreateOrder(userID int, address *entities.Address, items 
 		// AddressID: address.AdresseID,
 		StatusID:  pendingStatus.ID,
 		CreatedAt: now.Format("2006-01-02 15:04:05"),
+		UpdatedAt: now.Format("2006-01-02 15:04:05"),
 		Total:     0,
 	}
 
