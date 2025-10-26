@@ -25,11 +25,10 @@ func (h *livraisonHandler) Checkout(c *gin.Context) {
 
 	userID := sessionData.User.Id // ID de l'utilisateur connecté
 
-	// Payload sans user_id
 	var payload struct {
-		Address entities.Address     `json:"address"`
-		Items   []entities.OrderItem `json:"items"`
-		Method  string               `json:"method"`
+		Address entities.Address        `json:"livraison"`
+		Items   []entities.OrderItem    `json:"items"`
+		Method  entities.PaymentPayload `json:"payment"`
 	}
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -38,7 +37,7 @@ func (h *livraisonHandler) Checkout(c *gin.Context) {
 	}
 
 	orderService := service.NewOrderService(h.db)
-	order, err := orderService.CreateOrder(userID, &payload.Address, payload.Items, payload.Method)
+	order, err := orderService.CreateOrder(userID, &payload.Address, payload.Items, payload.Method.Method)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

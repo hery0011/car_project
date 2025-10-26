@@ -1,12 +1,15 @@
 package entities
 
+import "time"
+
 type WalletTransaction struct {
-	WalletTransactionID int     `json:"wallet_transaction_id" gorm:"primaryKey;autoIncrement"`
-	WalletID            int     `json:"wallet_id" gorm:"column:wallet_id"`
-	TransactionType     string  `json:"transaction_type" gorm:"column:transaction_type"`
-	Amount              float64 `json:"amount" gorm:"column:amount"`
-	Reference           string  `json:"reference" gorm:"column:reference"`
-	Description         string  `json:"description" gorm:"column:description"`
+	ID              int     `json:"id" gorm:"primaryKey;autoIncrement"`
+	WalletID        int     `json:"wallet_id"`
+	TransactionType string  `json:"transaction_type"` // credit, debit, refund
+	Amount          float64 `json:"amount"`
+	Reference       string  `json:"reference"`
+	Description     string
+	CreatedAt       time.Time
 }
 
 func (WalletTransaction) TableName() string {
