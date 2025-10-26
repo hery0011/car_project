@@ -10,5 +10,5 @@ type Client struct {
 }
 
 func (Client) TableName() string {
-	return "Client"
+	return "client"
 }

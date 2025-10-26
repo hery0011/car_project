@@ -12,7 +12,7 @@ type Commercant struct {
 }
 
 func (Commercant) TableName() string {
-	return "Commercant"
+	return "commercant"
 }
 
 type PayloadCommercant struct {

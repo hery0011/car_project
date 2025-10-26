@@ -13,5 +13,5 @@ type Commande struct {
 }
 
 func (Commande) TableName() string {
-	return "Commande"
+	return "commande"
 }

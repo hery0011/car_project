@@ -11,7 +11,7 @@ type Articles struct {
 }
 
 func (Articles) TableName() string {
-	return "Article"
+	return "article"
 }
 
 type Article struct {
@@ -41,5 +41,5 @@ type ArticleResponse struct {
 }
 
 func (Article) TableName() string {
-	return "Article"
+	return "article"
 }

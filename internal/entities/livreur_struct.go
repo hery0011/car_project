@@ -9,5 +9,5 @@ type Livreur struct {
 }
 
 func (Livreur) TableName() string {
-	return "Livreur"
+	return "livreur"
 }

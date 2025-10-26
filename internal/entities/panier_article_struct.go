@@ -7,5 +7,5 @@ type PanierArticle struct {
 }
 
 func (PanierArticle) TableName() string {
-	return "Panier_Article"
+	return "panier_article"
 }

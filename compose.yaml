@@ -1,33 +1,62 @@
 version: "3.8"
 services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
-    container_name: elasticsearch
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_server
+    restart: always
     environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false     # désactive la sécurité (authentification)
-      - xpack.security.http.ssl.enabled=false
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: livraison
+      MYSQL_PASSWORD: userpass
     ports:
-      - "9200:9200"
+      - "3306:3306"
     volumes:
-      - es_data:/usr/share/elasticsearch/data
-    networks:
-      - elastic
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sSf http://localhost:9200/ || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - livraison:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: root
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "8080:80"
+
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+  #   container_name: elasticsearch
+  #   environment:
+  #     - discovery.type=single-node
+  #     - xpack.security.enabled=false     # désactive la sécurité (authentification)
+  #     - xpack.security.http.ssl.enabled=false
+  #     - bootstrap.memory_lock=true
+  #     - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+  #   ulimits:
+  #     memlock:
+  #       soft: -1
+  #       hard: -1
+  #   ports:
+  #     - "9200:9200"
+  #   volumes:
+  #     - es_data:/usr/share/elasticsearch/data
+  #   networks:
+  #     - elastic
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -sSf http://localhost:9200/ || exit 1"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
 volumes:
   es_data:
+  livraison:
 
 networks:
   elastic:
     driver: bridge
+
+  

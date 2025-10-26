@@ -12,5 +12,5 @@ type ArticleImage struct {
 }
 
 func (ArticleImage) TableName() string {
-	return "Article_Image"
+	return "article_image"
 }

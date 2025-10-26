@@ -9,5 +9,5 @@ type CommandeArticle struct {
 }
 
 func (CommandeArticle) TableName() string {
-	return "Commande_Article"
+	return "commande_Article"
 }

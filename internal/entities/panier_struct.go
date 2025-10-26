@@ -8,7 +8,7 @@ type Panier struct {
 }
 
 func (Panier) TableName() string {
-	return "Panier"
+	return "panier"
 }
 
 type PayloadPanier struct {
