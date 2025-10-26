@@ -33,6 +33,7 @@ type LivraisonHandler interface {
 	GetArticleDetail(*gin.Context)
 	Checkout(*gin.Context)
 	ListOrders(*gin.Context)
+	GetTickets(*gin.Context)
 }
 
 type livraisonHandler struct {
