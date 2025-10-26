@@ -31,6 +31,8 @@ type LivraisonHandler interface {
 	ChercheCommercant(*gin.Context)
 	ListCategories(*gin.Context)
 	GetArticleDetail(*gin.Context)
+	Checkout(*gin.Context)
+	ListOrders(*gin.Context)
 }
 
 type livraisonHandler struct {
