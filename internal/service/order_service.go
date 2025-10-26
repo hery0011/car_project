@@ -45,11 +45,13 @@ func (s *OrderService) CreateOrder(userID int, address *entities.Address, items 
 		return nil, err
 	}
 
+	now := time.Now()
+
 	order := &entities.Order{
 		UserID: userID,
 		// AddressID: address.AdresseID,
 		StatusID:  pendingStatus.ID,
-		CreatedAt: time.Now(),
+		CreatedAt: now.Format("2006-01-02 15:04:05"),
 		Total:     0,
 	}
 
@@ -113,4 +115,17 @@ func (s *OrderService) handlePayment(tx *gorm.DB, userID int, order *entities.Or
 
 	// Met à jour le statut de la commande selon la logique du processor
 	return processor.UpdateOrderStatus(tx, order)
+}
+
+func (s *OrderService) ListOrders(userID int, statusCode string) ([]entities.Order, error) {
+	var orders []entities.Order
+	query := s.db.Preload("Items").Preload("Status").Where("user_id = ?", userID)
+	if statusCode != "" {
+		query = query.Joins("JOIN order_status ON orders.status_id = order_status.id").
+			Where("order_status.code = ?", statusCode)
+	}
+	if err := query.Order("created_at DESC").Find(&orders).Error; err != nil {
+		return nil, err
+	}
+	return orders, nil
 }
