@@ -28,6 +28,8 @@ func GetRoutes(apiAddress string) {
 	router.GET("/categories/list", cHandler.ListCategories)
 	router.GET("/articles/:id", cHandler.GetArticleDetail)
 	router.POST("/orders/create", jwt.AuthMiddleware(), cHandler.Checkout)
+	r := router.Group("/api/tickets")
+	r.GET("", cHandler.GetTickets)
 	// --------------------------------------------------
 
 	router.GET("/orders/list", jwt.AuthMiddleware(), cHandler.ListOrders)

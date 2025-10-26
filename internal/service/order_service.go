@@ -2,7 +2,6 @@ package service
 
 import (
 	"car_project/internal/entities"
-	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -23,22 +22,37 @@ func NewOrderService(db *gorm.DB) *OrderService {
 }
 
 // CreateOrder crée la commande et effectue le paiement si possible
-func (s *OrderService) CreateOrder(userID int, address *entities.Address, items []entities.OrderItem, method string) (*entities.Order, error) {
+func (s *OrderService) CreateOrder(
+	userID int,
+	pickupAddress *entities.Address,
+	// dropoffAddress *entities.Address,
+	items []entities.OrderItem,
+	method string,
+) (*entities.Order, error) {
 	tx := s.db.Begin()
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 
-	// créer adresse si besoin
-	if address.AdresseID == 0 {
-		address.ClientID = userID
-		if err := tx.Create(address).Error; err != nil {
+	// --- Création adresse de récupération si besoin ---
+	if pickupAddress.AdresseID == 0 {
+		pickupAddress.ClientID = userID
+		if err := tx.Create(pickupAddress).Error; err != nil {
 			tx.Rollback()
 			return nil, err
 		}
 	}
 
-	// statut initial
+	// --- Création adresse de livraison si besoin ---
+	// if dropoffAddress.AdresseID == 0 {
+	// 	dropoffAddress.ClientID = userID
+	// 	if err := tx.Create(dropoffAddress).Error; err != nil {
+	// 		tx.Rollback()
+	// 		return nil, err
+	// 	}
+	// }
+
+	// --- Statut initial de la commande ---
 	var pendingStatus entities.OrderStatus
 	if err := tx.Where("code = ?", "pending_payment").First(&pendingStatus).Error; err != nil {
 		tx.Rollback()
@@ -46,10 +60,8 @@ func (s *OrderService) CreateOrder(userID int, address *entities.Address, items 
 	}
 
 	now := time.Now()
-
 	order := &entities.Order{
-		UserID: userID,
-		// AddressID: address.AdresseID,
+		UserID:    userID,
 		StatusID:  pendingStatus.ID,
 		CreatedAt: now.Format("2006-01-02 15:04:05"),
 		UpdatedAt: now.Format("2006-01-02 15:04:05"),
@@ -61,12 +73,22 @@ func (s *OrderService) CreateOrder(userID int, address *entities.Address, items 
 		return nil, err
 	}
 
-	// enregistrer items
+	// --- Liaison order <-> addresses ---
+	if err := tx.Create(&entities.OrderAddress{
+		OrderID:   order.OrderID,
+		AdresseID: pickupAddress.AdresseID,
+		Type:      "dropoff",
+		// DropoffAddressID: dropoffAddress.AdresseID,
+	}).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	// --- Création des items ---
 	total := 0.0
 	for i := range items {
 		items[i].OrderID = order.OrderID
 		items[i].TotalPrice = items[i].UnitPrice * float64(items[i].Quantity)
-		fmt.Printf("Creating order item: %+v\n", items[i])
 		if err := tx.Create(&items[i]).Error; err != nil {
 			tx.Rollback()
 			return nil, err
@@ -79,7 +101,7 @@ func (s *OrderService) CreateOrder(userID int, address *entities.Address, items 
 		return nil, err
 	}
 
-	// Process paiement
+	// --- Traitement du paiement ---
 	if err := s.handlePayment(tx, userID, order, method); err != nil {
 		tx.Rollback()
 		return nil, err
