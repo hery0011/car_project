@@ -38,10 +38,11 @@ const (
 	AssignProfil = "/assignProfil"
 
 	//article
-	ArticlePath   = "/article"
-	ListArticle   = "/list"
-	AddArticle    = "/add"
-	DeleteArticle = "/:id/delete"
+	ArticlePath               = "/article"
+	ListArticle               = "/list"
+	AddArticle                = "/add"
+	DeleteArticle             = "/:id/delete"
+	FilterArticleByCommercant = "/filter/:commercant"
 
 	//categorie
 	CategoriePath = "/categorie"

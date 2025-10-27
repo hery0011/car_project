@@ -32,7 +32,7 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 		page = 1
 	}
 
-	limit := 12
+	limit := 10
 	offset := (page - 1) * limit
 
 	var articles []entities.Article
@@ -405,5 +405,96 @@ func (h *livraisonHandler) DeleteArticle(c *gin.Context) {
 		"status":  http.StatusOK,
 		"message": "Article deleted successfully",
 		"id":      idArticle,
+	})
+}
+
+func (h *livraisonHandler) FilterArticleByCommercant(c *gin.Context) {
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	limit := 10
+	offset := (page - 1) * limit
+
+	// Récupérer le nom du commerçant depuis l'URL
+	commercantNom := c.Query("commercantNom")
+
+	var articles []entities.Article
+	var total int64
+
+	// Base de la requête
+	query := h.db.Model(&entities.Article{}).
+		Preload("Images").
+		Preload("Categorie").
+		Preload("Commercant")
+
+	// Si un nom de commerçant est fourni
+	if commercantNom != "" {
+		likeValue := fmt.Sprintf("%%%s%%", commercantNom)
+		query = query.
+			Joins("JOIN commercant ON commercant.commercant_id = article.commercant_id").
+			Where("commercant.nom LIKE ?", likeValue)
+	}
+
+	// Compter le total filtré
+	if err := query.Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Erreur lors du comptage des articles",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// Charger les données paginées
+	if err := query.
+		Limit(limit).
+		Offset(offset).
+		Find(&articles).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Erreur lors de la récupération des articles",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	if len(articles) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  http.StatusNotFound,
+			"message": "Aucun article trouvé pour cette page",
+			"data":    []entities.ArticleResponse{},
+		})
+		return
+	}
+
+	// Mapper les résultats
+	var response []entities.ArticleResponse
+	for _, a := range articles {
+		response = append(response, entities.ArticleResponse{
+			ArticleID:   a.Article_id,
+			Nom:         a.Nom,
+			Description: a.Description,
+			Prix:        a.Prix,
+			Stock:       a.Stock,
+			Categorie:   a.Categorie,
+			Commercant:  a.Commercant,
+			Images:      a.Images,
+		})
+	}
+
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+	// Réponse finale
+	c.JSON(http.StatusOK, gin.H{
+		"status":     http.StatusOK,
+		"message":    "Liste des articles récupérée avec succès",
+		"page":       page,
+		"limit":      limit,
+		"totalItems": total,
+		"totalPages": totalPages,
+		"count":      len(response),
+		"data":       response,
 	})
 }

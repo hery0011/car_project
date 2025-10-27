@@ -78,6 +78,8 @@ func (s *OrderService) CreateOrder(
 		OrderID:   order.OrderID,
 		AdresseID: pickupAddress.AdresseID,
 		Type:      "dropoff",
+		CreatedAt: now.Format("2006-01-02 15:04:05"),
+		UpdatedAt: now.Format("2006-01-02 15:04:05"),
 		// DropoffAddressID: dropoffAddress.AdresseID,
 	}).Error; err != nil {
 		tx.Rollback()
