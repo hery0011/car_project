@@ -42,7 +42,8 @@ const (
 	ListArticle               = "/list"
 	AddArticle                = "/add"
 	DeleteArticle             = "/:id/delete"
-	FilterArticleByCommercant = "/filter/:commercant"
+	FilterArticleByCommercant = "/filterCommerc/:commercant"
+	FilterArticleByName       = "/filterArticle/:article"
 
 	//categorie
 	CategoriePath = "/categorie"
