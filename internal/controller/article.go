@@ -407,7 +407,6 @@ func (h *livraisonHandler) DeleteArticle(c *gin.Context) {
 		"id":      idArticle,
 	})
 }
-
 func (h *livraisonHandler) FilterArticleByCommercant(c *gin.Context) {
 	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
 	if err != nil || page < 1 {
@@ -418,7 +417,7 @@ func (h *livraisonHandler) FilterArticleByCommercant(c *gin.Context) {
 	offset := (page - 1) * limit
 
 	// Récupérer le nom du commerçant depuis l'URL
-	commercantNom := c.Query("commercantNom")
+	commercantNom := c.Param("commercant")
 
 	var articles []entities.Article
 	var total int64
@@ -437,8 +436,13 @@ func (h *livraisonHandler) FilterArticleByCommercant(c *gin.Context) {
 			Where("commercant.nom LIKE ?", likeValue)
 	}
 
+	// 🔑 CORRECTION CLÉ : Utiliser Session() pour le comptage.
+	// Cela crée une copie de la requête avec les JOINs et WHERE pour obtenir le total FILTRÉ,
+	// sans modifier l'état de la requête 'query' originale.
+	countQuery := query.Session(&gorm.Session{})
+
 	// Compter le total filtré
-	if err := query.Count(&total).Error; err != nil {
+	if err := countQuery.Count(&total).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
 			"message": "Erreur lors du comptage des articles",
@@ -448,6 +452,7 @@ func (h *livraisonHandler) FilterArticleByCommercant(c *gin.Context) {
 	}
 
 	// Charger les données paginées
+	// La requête 'query' initiale conserve son filtre (JOIN/WHERE) intact
 	if err := query.
 		Limit(limit).
 		Offset(offset).
