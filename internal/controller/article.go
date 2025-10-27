@@ -605,3 +605,98 @@ func (h *livraisonHandler) FilterArticleByName(c *gin.Context) {
 		"data":       response,
 	})
 }
+func (h *livraisonHandler) FilterArticleByCategorie(c *gin.Context) {
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	limit := 10
+	offset := (page - 1) * limit
+
+	// Récupérer le nom de la catégorie depuis la QUERY STRING (ex: ?categorie=boissons)
+	categorieNom := c.Param("categorie")
+
+	var articles []entities.Article
+	var total int64
+
+	// Base de la requête
+	query := h.db.Model(&entities.Article{}).
+		Preload("Images").
+		Preload("Categorie").
+		Preload("Commercant")
+
+	// Si un nom de catégorie est fourni, on filtre.
+	if categorieNom != "" {
+		likeValue := fmt.Sprintf("%%%s%%", categorieNom)
+
+		// 🔑 CORRECTION CLÉ : Utiliser Joins pour filtrer sur une table associée (Categorie)
+		query = query.
+			Joins("JOIN categorie ON categorie.categorie_id = article.categorie_id").
+			Where("categorie.nom LIKE ?", likeValue)
+	}
+
+	// 🔑 Utiliser Session() pour le comptage (isole l'état du filtre).
+	countQuery := query.Session(&gorm.Session{})
+
+	// Compter le total filtré
+	if err := countQuery.Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Erreur lors du comptage des articles",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// Charger les données paginées
+	if err := query.
+		Limit(limit).
+		Offset(offset).
+		Find(&articles).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Erreur lors de la récupération des articles",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	if len(articles) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  http.StatusNotFound,
+			"message": "Aucun article trouvé pour cette page",
+			"data":    []entities.ArticleResponse{},
+		})
+		return
+	}
+
+	// Mapper les résultats (inchangé)
+	var response []entities.ArticleResponse
+	for _, a := range articles {
+		response = append(response, entities.ArticleResponse{
+			ArticleID:   a.Article_id,
+			Nom:         a.Nom,
+			Description: a.Description,
+			Prix:        a.Prix,
+			Stock:       a.Stock,
+			Categorie:   a.Categorie,
+			Commercant:  a.Commercant,
+			Images:      a.Images,
+		})
+	}
+
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+	// Réponse finale
+	c.JSON(http.StatusOK, gin.H{
+		"status":     http.StatusOK,
+		"message":    "Liste des articles récupérée avec succès",
+		"page":       page,
+		"limit":      limit,
+		"totalItems": total,
+		"totalPages": totalPages,
+		"count":      len(response),
+		"data":       response,
+	})
+}

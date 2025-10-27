@@ -38,6 +38,7 @@ type LivraisonHandler interface {
 	AssignTicket(*gin.Context)
 	FilterArticleByCommercant(*gin.Context)
 	FilterArticleByName(*gin.Context)
+	FilterArticleByCategorie(*gin.Context)
 }
 
 type livraisonHandler struct {

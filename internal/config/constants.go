@@ -44,6 +44,7 @@ const (
 	DeleteArticle             = "/:id/delete"
 	FilterArticleByCommercant = "/filterCommerc/:commercant"
 	FilterArticleByName       = "/filterArticle/:article"
+	FilterArticleByCategorie  = "/filterCategorie/:categorie"
 
 	//categorie
 	CategoriePath = "/categorie"
