@@ -64,8 +64,10 @@ const (
 	CommandeAssign    = "/commandeAssign/:user_id"
 
 	//livreur
-	LivreurPath  = "/livreur"
-	AjoutLivreur = "/add"
+	LivreurPath       = "/livreur"
+	AjoutLivreur      = "/add"
+	ListLivreur       = "/listLivreur"
+	ListLivreurFilter = "/listLivreurFilter"
 
 	//commercant
 	CommercantPath    = "/commercant"

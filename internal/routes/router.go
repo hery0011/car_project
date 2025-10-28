@@ -105,6 +105,9 @@ func GetRoutes(apiAddress string) {
 		livreurGroup := dashboardGroup.Group(config.LivreurPath, jwt.AuthMiddleware())
 		{
 			livreurGroup.POST(config.AjoutLivreur, cHandler.AjoutLivreur)
+			livreurGroup.GET(config.ListLivreur, cHandler.ListLivreur)
+			livreurGroup.GET(config.ListLivreurFilter, cHandler.GetLocation)
+
 		}
 	}
 
