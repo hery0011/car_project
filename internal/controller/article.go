@@ -6,10 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -32,7 +35,7 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 		page = 1
 	}
 
-	limit := 10
+	limit := 13
 	offset := (page - 1) * limit
 
 	var articles []entities.Article
@@ -51,7 +54,7 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 	// Charger les données avec pagination + Preload
 	if err := h.db.
 		Preload("Images").
-		Preload("Categorie").
+		// Preload("Categorie").
 		Preload("Commercant").
 		Limit(limit).
 		Offset(offset).
@@ -78,14 +81,15 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 	var response []entities.ArticleResponse
 	for _, a := range articles {
 		resp := entities.ArticleResponse{
-			ArticleID:   a.Article_id,
+			ArticleID:   a.ArticleID,
 			Nom:         a.Nom,
+			Slug:        a.Slug,
 			Description: a.Description,
 			Prix:        a.Prix,
 			Stock:       a.Stock,
-			Categorie:   a.Categorie,
-			Commercant:  a.Commercant,
-			Images:      a.Images,
+			// Categorie:   a.Categories[],
+			Commercant: a.Commercant,
+			Images:     a.Images,
 		}
 		response = append(response, resp)
 	}
@@ -135,7 +139,7 @@ func (h *livraisonHandler) GetArticleDetail(c *gin.Context) {
 	// Rechercher l'article avec les relations
 	if err := h.db.
 		Preload("Images").
-		Preload("Categorie").
+		Preload("Categories").
 		Preload("Commercant").
 		First(&article, "article_id = ?", id).Error; err != nil {
 
@@ -156,12 +160,12 @@ func (h *livraisonHandler) GetArticleDetail(c *gin.Context) {
 
 	// Transformer en ArticleResponse
 	response := entities.ArticleResponse{
-		ArticleID:   article.Article_id,
+		ArticleID:   article.ArticleID,
 		Nom:         article.Nom,
 		Description: article.Description,
 		Prix:        article.Prix,
 		Stock:       article.Stock,
-		Categorie:   article.Categorie,
+		Categorie:   article.Categories,
 		Commercant:  article.Commercant,
 		Images:      article.Images,
 	}
@@ -244,114 +248,150 @@ func (h *livraisonHandler) ListCategories(c *gin.Context) {
 // @Failure 500 {object} map[string]interface{} "Erreur serveur lors de l'ajout de l'article"
 // @Router /dash/article/add [post]
 func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
-	// Récupération des champs (form-data)
-	var article entities.Articles
-	article.Nom = c.PostForm("nom")
-	article.Description = c.PostForm("description")
+	var input entities.ArticleCreateRequest
 
-	// Convertir prix et stock
-	prix, _ := strconv.ParseFloat(c.PostForm("prix"), 64)
-	stock, _ := strconv.Atoi(c.PostForm("stock"))
-	commercantID, _ := strconv.Atoi(c.PostForm("commercant_id"))
-	categorieID, _ := strconv.Atoi(c.PostForm("categorie_id"))
-	largeur, _ := strconv.Atoi(c.PostForm("largeur"))
-	hauteur, _ := strconv.Atoi(c.PostForm("hauteur"))
-	ordre, _ := strconv.Atoi(c.PostForm("ordre"))
-	imageType := c.PostForm("type")
-	taille := c.PostForm("taille")
-
-	article.Prix = prix
-	article.Stock = stock
-	article.Commercant_id = commercantID
-	article.Categorie_id = categorieID
-
-	// Récupérer l'image encodée en base64
-	base64Image := c.PostForm("image")
-	if base64Image == "" {
+	if err := c.ShouldBindJSON(&input); err != nil {
+		log.Printf("Erreur de Binding JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
-			"message": "Image is required",
-		})
-		return
-	}
-
-	// Décoder la chaîne base64
-	// Gérer le préfixe (ex: "data:image/png;base64,")
-	coI := strings.Index(base64Image, ",")
-	if coI != -1 {
-		base64Image = base64Image[coI+1:]
-	}
-
-	imgData, err := base64.StdEncoding.DecodeString(base64Image)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "Invalid base64 image data",
+			"message": "Erreur de validation de la requête JSON",
 			"error":   err.Error(),
 		})
 		return
 	}
 
-	// Début transaction
+	if input.CommercantID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "CommercantID est manquant ou invalide (doit être > 0)."})
+		return
+	}
+	var existingCommercant entities.Commercant
+	if h.db.First(&existingCommercant, input.CommercantID).Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  http.StatusNotFound,
+			"message": fmt.Sprintf("Commercant ID %d non trouvé. Impossible d'associer l'article.", input.CommercantID),
+		})
+		return
+	}
+
+	article := entities.Article{
+		Nom:              input.Nom,
+		Slug:             generateSlug(input.Nom),
+		ShortDescription: "",
+		Description:      input.Description,
+		Status:           "draft",
+		IsActive:         true,
+		Prix:             input.Prix,
+		Stock:            input.Stock,
+		CommercantID:     input.CommercantID,
+	}
+
 	tx := h.db.Begin()
 	if tx.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to start transaction", "error": tx.Error.Error()})
 		return
 	}
 
-	// Insérer l'article
 	if err := tx.Create(&article).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create article", "error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create article (Clé étrangère CommercantID)", "error": err.Error()})
 		return
 	}
 
-	// Générer un nom de fichier unique
-	// Assurez-vous que le dossier "uploads" existe
-	if _, err := os.Stat("uploads"); os.IsNotExist(err) {
-		os.Mkdir("uploads", os.ModePerm)
-	}
-	fileName := fmt.Sprintf("uploads/%d.%s", article.Article_id, imageType)
+	articleID := article.ArticleID
 
-	// Sauvegarder les données de l'image dans un fichier
-	if err := ioutil.WriteFile(fileName, imgData, 0644); err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save image", "error": err.Error()})
-		return
+	var savedImages []entities.ArticleImage
+	for i, imgPayload := range input.Images {
+		base64Image := imgPayload.Base64Data
+		if coI := strings.Index(base64Image, ","); coI != -1 {
+			base64Image = base64Image[coI+1:]
+		}
+		imgData, err := base64.StdEncoding.DecodeString(base64Image)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Image #%d: Invalid base64 data", i+1), "error": err.Error()})
+			return
+		}
+
+		// 🔑 Gestion des chemins et création récursive des dossiers
+		fileName := fmt.Sprintf("/uploads/commercants/%d/articles/%d/uploads/%d-%d-%d.jpg", input.CommercantID, articleID, articleID, i, time.Now().UnixNano())
+
+		dirPath := filepath.Dir(fileName)
+
+		if err := os.MkdirAll("."+dirPath, os.ModePerm); err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Image #%d: Failed to create directory structure %s", i+1, dirPath), "error": err.Error()})
+			return
+		}
+
+		if err := ioutil.WriteFile("."+fileName, imgData, 0644); err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Image #%d: Failed to save file", i+1), "error": err.Error()})
+			return
+		}
+
+		imageRecord := entities.ArticleImage{
+			Article_id: articleID,
+			Url:        fileName,
+			Largeur:    imgPayload.Largeur,
+			Hauteur:    imgPayload.Hauteur,
+			Ordre:      imgPayload.Ordre,
+			Type:       imgPayload.Type,
+			Taille:     imgPayload.Taille,
+		}
+		if err := tx.Create(&imageRecord).Error; err != nil {
+			os.Remove("." + fileName)
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Image #%d: Failed to save record", i+1), "error": err.Error()})
+			return
+		}
+		savedImages = append(savedImages, imageRecord)
 	}
 
-	// Insérer dans Article_Image
-	imageRecord := entities.ArticleImage{
-		Article_id: article.Article_id,
-		Url:        fileName, // Utiliser le nouveau nom de fichier
-		Largeur:    largeur,
-		Hauteur:    hauteur,
-		Ordre:      ordre,
-		Type:       imageType,
-		Taille:     taille,
-	}
-	if err := tx.Create(&imageRecord).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save image record", "error": err.Error()})
-		return
+	var linkedCategories []entities.Categorie
+	for _, catID := range input.CategorieIDs {
+		var count int64
+		if err := tx.Model(&entities.Categorie{}).Where("categorie_id = ?", catID).Count(&count).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Database error during category check", "error": err.Error()})
+			return
+		}
+
+		if count == 0 {
+			tx.Rollback()
+			c.JSON(http.StatusNotFound, gin.H{"message": fmt.Sprintf("Category ID %d not found", catID)})
+			return
+		}
+
+		if err := tx.Exec("INSERT INTO article_category (article_id, categorie_id) VALUES (?, ?)", articleID, catID).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to manually link category", "error": err.Error()})
+			return
+		}
+
+		var cat entities.Categorie
+		h.db.First(&cat, catID)
+		linkedCategories = append(linkedCategories, cat)
 	}
 
-	// Commit transaction
 	if err := tx.Commit().Error; err != nil {
-		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit transaction", "error": err.Error()})
 		return
 	}
 
-	// Succès
+	article.Images = savedImages
+	article.Categories = linkedCategories
+
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
 		"message": "Article created successfully",
-		"data": gin.H{
-			"article": article,
-			"image":   imageRecord,
-		},
+		"data":    article,
 	})
+}
+
+func generateSlug(s string) string {
+	s = strings.ToLower(s)
+	s = strings.ReplaceAll(s, " ", "-")
+	return s
 }
 
 // DeleteArticle godoc
@@ -479,12 +519,12 @@ func (h *livraisonHandler) FilterArticleByCommercant(c *gin.Context) {
 	var response []entities.ArticleResponse
 	for _, a := range articles {
 		response = append(response, entities.ArticleResponse{
-			ArticleID:   a.Article_id,
+			ArticleID:   a.ArticleID,
 			Nom:         a.Nom,
 			Description: a.Description,
 			Prix:        a.Prix,
 			Stock:       a.Stock,
-			Categorie:   a.Categorie,
+			Categorie:   a.Categories,
 			Commercant:  a.Commercant,
 			Images:      a.Images,
 		})
@@ -580,12 +620,12 @@ func (h *livraisonHandler) FilterArticleByName(c *gin.Context) {
 	var response []entities.ArticleResponse
 	for _, a := range articles {
 		response = append(response, entities.ArticleResponse{
-			ArticleID:   a.Article_id,
+			ArticleID:   a.ArticleID,
 			Nom:         a.Nom,
 			Description: a.Description,
 			Prix:        a.Prix,
 			Stock:       a.Stock,
-			Categorie:   a.Categorie,
+			Categorie:   a.Categories,
 			Commercant:  a.Commercant,
 			Images:      a.Images,
 		})
@@ -675,12 +715,12 @@ func (h *livraisonHandler) FilterArticleByCategorie(c *gin.Context) {
 	var response []entities.ArticleResponse
 	for _, a := range articles {
 		response = append(response, entities.ArticleResponse{
-			ArticleID:   a.Article_id,
+			ArticleID:   a.ArticleID,
 			Nom:         a.Nom,
 			Description: a.Description,
 			Prix:        a.Prix,
 			Stock:       a.Stock,
-			Categorie:   a.Categorie,
+			Categorie:   a.Categories,
 			Commercant:  a.Commercant,
 			Images:      a.Images,
 		})
