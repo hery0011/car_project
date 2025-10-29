@@ -189,12 +189,12 @@ func (h *livraisonHandler) ListeArticleByCommercant(c *gin.Context) {
 	var response []entities.ArticleResponse
 	for _, a := range articles {
 		response = append(response, entities.ArticleResponse{
-			ArticleID:   a.Article_id,
+			ArticleID:   a.ArticleID,
 			Nom:         a.Nom,
 			Description: a.Description,
 			Prix:        a.Prix,
 			Stock:       a.Stock,
-			Categorie:   a.Categorie,
+			Categorie:   a.Categories,
 			Commercant:  a.Commercant,
 			Images:      a.Images,
 		})
