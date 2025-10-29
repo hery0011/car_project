@@ -69,6 +69,7 @@ func GetRoutes(apiAddress string) {
 		articleGroup := dashboardGroup.Group(config.ArticlePath)
 		{
 			articleGroup.GET(config.ListArticle, cHandler.ListArticle)
+			articleGroup.GET(config.ListeArticleByCommercant, cHandler.ListeArticleByCommercant)
 			articleGroup.POST(config.AddArticle, cHandler.AjoutArticle)
 			articleGroup.DELETE(config.DeleteArticle, cHandler.DeleteArticle)
 			articleGroup.GET(config.FilterArticleByCommercant, cHandler.FilterArticleByCommercant)
