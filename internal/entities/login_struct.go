@@ -28,9 +28,25 @@ type RefreshToken struct {
 
 // Modèle à tester
 type User struct {
-	ID    uint
-	Name  string
-	Email string
+	Id           int     `gorm:"primaryKey;column:id" json:"id"`
+	Login        string  `gorm:"column:login;size:100;not null" json:"login"`
+	Password     string  `gorm:"column:password;size:255;not null" json:"-"`
+	Name         string  `gorm:"column:name;size:100;not null" json:"name"`
+	LastName     string  `gorm:"column:lastname;size:100;not null" json:"lastname"`
+	Type         string  `gorm:"column:type;size:50;not null" json:"type"`
+	Contact      string  `gorm:"column:contact;size:20;not null" json:"contact"`
+	Mail         string  `gorm:"column:mail;size:150;not null" json:"mail"`
+	Adresse      string  `gorm:"column:adresse;type:text;not null" json:"adresse"`
+	Latitude     *string `gorm:"column:latitude;size:45" json:"latitude,omitempty"`
+	Longitude    *string `gorm:"column:longitude;size:45" json:"longitude,omitempty"`
+	CommercantID *int    `gorm:"column:commercant_id" json:"commercant_id,omitempty"` // Optionnel
+
+	// Relation GORM
+	Commercant *Commercant `gorm:"foreignKey:CommercantID" json:"commercant,omitempty"`
+}
+
+func (User) TableName() string {
+	return "user"
 }
 
 type SessionData struct {
@@ -51,7 +67,7 @@ type UserResponse struct {
 }
 
 type LoginResponse struct {
-	AccessToken string      `json:"access_token"`
+	AccessToken string       `json:"access_token"`
 	User        UserResponse `json:"user"`
 }
 

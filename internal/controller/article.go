@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"car_project/internal/helper"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -834,6 +836,120 @@ func (h *livraisonHandler) FilterArticleByCategorie(c *gin.Context) {
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
 	// Réponse finale
+	c.JSON(http.StatusOK, gin.H{
+		"status":     http.StatusOK,
+		"message":    "Liste des articles récupérée avec succès",
+		"page":       page,
+		"limit":      limit,
+		"totalItems": total,
+		"totalPages": totalPages,
+		"count":      len(response),
+		"data":       response,
+	})
+}
+
+func (h *livraisonHandler) FilterArticles(c *gin.Context) {
+	// --- Récupérer l'utilisateur connecté ---
+	userID, err := helper.GetUserID(c)
+	if err != nil {
+		// l'erreur a déjà été gérée dans GetUserID, on stoppe le handler
+		return
+	}
+
+	// --- Pagination ---
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	limit := 10
+	offset := (page - 1) * limit
+
+	// --- Filtre optionnel par nom et catégorie ---
+	name := c.Query("name")
+	// categorie := c.Query("categorie")
+
+	var articles []entities.Article
+	var total int64
+
+	// --- Base query ---
+	query := h.db.Model(&entities.Article{}).
+		Preload("Images").
+		// Preload("Categorie").
+		Preload("Commercant")
+
+	// --- Filtrer uniquement les articles du commerçant de l'utilisateur connecté ---
+	var user entities.User
+	if err := h.db.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Impossible de récupérer l'utilisateur",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	if user.CommercantID != nil {
+		query = query.Where("article.commercant_id = ?", *user.CommercantID)
+	}
+
+	// --- Autres filtres ---
+	if name != "" {
+		query = query.Where("article.nom LIKE ?", "%"+name+"%")
+	}
+
+	// if categorie != "" {
+	// 	query = query.Joins("JOIN categorie ON categorie.categorie_id = article.categorie_id").
+	// 		Where("categorie.nom LIKE ?", "%"+categorie+"%")
+	// }
+
+	// --- Count total filtered ---
+	countQuery := query.Session(&gorm.Session{})
+	if err := countQuery.Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Erreur lors du comptage des articles",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// --- Pagination & récupération des données ---
+	if err := query.Limit(limit).Offset(offset).Find(&articles).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Erreur lors de la récupération des articles",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	if len(articles) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  http.StatusNotFound,
+			"message": "Aucun article trouvé pour cette page",
+			"data":    []entities.ArticleResponse{},
+		})
+		return
+	}
+
+	// --- Mapping vers ArticleResponse ---
+	response := make([]entities.ArticleResponse, 0, len(articles))
+	for _, a := range articles {
+		response = append(response, entities.ArticleResponse{
+			ArticleID:   a.ArticleID,
+			Nom:         a.Nom,
+			Description: a.Description,
+			Prix:        a.Prix,
+			Stock:       a.Stock,
+			Categorie:   a.Categories,
+			Commercant:  a.Commercant,
+			Images:      a.Images,
+		})
+	}
+
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+	// --- Réponse finale ---
 	c.JSON(http.StatusOK, gin.H{
 		"status":     http.StatusOK,
 		"message":    "Liste des articles récupérée avec succès",
