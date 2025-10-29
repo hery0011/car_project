@@ -287,7 +287,7 @@ func (h *livraisonHandler) ListCategories(c *gin.Context) {
 	var categories []entities.Categorie
 
 	// Charger toutes les catégories
-	if err := h.db.Find(&categories).Error; err != nil {
+	if err := h.db.Preload("SubCategories").Find(&categories).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
 			"message": "Erreur lors de la récupération des catégories",

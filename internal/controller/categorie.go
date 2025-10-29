@@ -18,7 +18,7 @@ import (
 func (h *livraisonHandler) ListCategorie(c *gin.Context) {
 	var categories []entities.Categorie
 
-	if err := h.db.Find(&categories).Error; err != nil {
+	if err := h.db.Preload("SubCategories").Find(&categories).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
 			"message": err.Error(),
