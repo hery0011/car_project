@@ -45,6 +45,7 @@ const (
 	FilterArticleByCommercant = "/filterCommerc/:commercant"
 	FilterArticleByName       = "/filterArticle/:article"
 	FilterArticleByCategorie  = "/filterCategorie/:categorie"
+	ListeArticleByCommercant  = "/listArticleByCommerçant/:idCommercant"
 
 	//categorie
 	CategoriePath = "/categorie"

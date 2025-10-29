@@ -463,8 +463,8 @@ const docTemplate = `{
                         "in": "formData"
                     },
                     {
-                        "type": "file",
-                        "description": "Fichier image à uploader",
+                        "type": "string",
+                        "description": "Image encodée en base64",
                         "name": "image",
                         "in": "formData",
                         "required": true
@@ -515,6 +515,58 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Erreur lors de la récupération",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/dash/article/commande/add": {
+            "post": {
+                "description": "Crée une nouvelle commande avec ses articles et envoie une notification WS aux commerçants concernés",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "commande"
+                ],
+                "summary": "Ajouter une commande",
+                "parameters": [
+                    {
+                        "description": "Liste des articles de la commande",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/controller.ArticlePayload"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Commande créée avec succès, contient la commande et les articles",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Payload vide ou erreur lors de l'insertion",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erreur serveur lors de la création de la commande",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -853,6 +905,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/dash/article/{id}": {
+            "get": {
+                "description": "Retourne les informations détaillées d'un article (images, catégorie, commerçant)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "article"
+                ],
+                "summary": "Récupérer les détails d'un article",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de l'article",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/entities.ArticleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/dash/article/{id}/delete": {
             "delete": {
                 "description": "Supprime un article en fonction de son ID",
@@ -903,58 +1014,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/ddash/article/commande/add": {
-            "post": {
-                "description": "Crée une nouvelle commande avec ses articles et envoie une notification WS aux commerçants concernés",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "commande"
-                ],
-                "summary": "Ajouter une commande",
-                "parameters": [
-                    {
-                        "description": "Liste des articles de la commande",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/controller.ArticlePayload"
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Commande créée avec succès, contient la commande et les articles",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Payload vide ou erreur lors de l'insertion",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Erreur serveur lors de la création de la commande",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -966,6 +1025,15 @@ const docTemplate = `{
                 },
                 "client_id": {
                     "type": "integer"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "lieuxLivraison": {
+                    "type": "string"
+                },
+                "longitude": {
+                    "type": "number"
                 },
                 "prix_unitaire": {
                     "type": "number"
@@ -1007,9 +1075,6 @@ const docTemplate = `{
         "entities.ArticleResponse": {
             "type": "object",
             "properties": {
-                "article_id": {
-                    "type": "integer"
-                },
                 "categorie": {
                     "$ref": "#/definitions/entities.Categorie"
                 },
@@ -1018,6 +1083,9 @@ const docTemplate = `{
                 },
                 "description": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "images": {
                     "type": "array",
@@ -1042,6 +1110,9 @@ const docTemplate = `{
                 "categorie_id": {
                     "type": "integer"
                 },
+                "image_url": {
+                    "type": "string"
+                },
                 "nom": {
                     "type": "string"
                 },
@@ -1064,6 +1135,12 @@ const docTemplate = `{
                 },
                 "email": {
                     "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
                 },
                 "nom": {
                     "type": "string"
@@ -1099,8 +1176,14 @@ const docTemplate = `{
                 "lastname": {
                     "type": "string"
                 },
+                "latitude": {
+                    "type": "number"
+                },
                 "login": {
                     "type": "string"
+                },
+                "longitude": {
+                    "type": "number"
                 },
                 "mail": {
                     "type": "string"

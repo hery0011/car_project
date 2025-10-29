@@ -110,6 +110,111 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 	})
 }
 
+// GetArticleImages godoc
+// @Summary Récupérer les images d'articles par commerçant
+// @Description Retourne une liste paginée d'articles appartenant à un commerçant spécifique.
+// @Tags article
+// @Accept json
+// @Produce json
+// @Param idCommercant path int true "ID du commerçant"
+// @Param page query int false "Numéro de la page (commence à 1)"
+// @Success 200 {object} entities.ArticleResponse
+// @Failure 400 {object} map[string]string
+// @Router /dash/article/list/{idCommercant} [get]
+func (h *livraisonHandler) ListeArticleByCommercant(c *gin.Context) {
+	// 🔹 Récupérer l'ID commerçant depuis l'URL
+	idCommercantStr := c.Param("idCommercant")
+	idCommercant, err := strconv.Atoi(idCommercantStr)
+	if err != nil || idCommercant <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "ID commerçant invalide",
+		})
+		return
+	}
+
+	// 🔹 Récupérer la page
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	limit := 10
+	offset := (page - 1) * limit
+
+	var articles []entities.Article
+	var total int64
+
+	// 🔹 Compter le nombre total d'articles du commerçant
+	if err := h.db.Model(&entities.Article{}).
+		Where("commercant_id = ?", idCommercant).
+		Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Erreur lors du comptage des articles",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// 🔹 Charger les articles filtrés par commerçant avec pagination
+	if err := h.db.
+		Preload("Images").
+		Preload("Categorie").
+		Preload("Commercant").
+		Where("commercant_id = ?", idCommercant).
+		Limit(limit).
+		Offset(offset).
+		Find(&articles).Error; err != nil {
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Erreur lors de la récupération des articles",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// 🔹 Vérifier si aucun article trouvé
+	if len(articles) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  http.StatusNotFound,
+			"message": "Aucun article trouvé pour ce commerçant",
+			"data":    []entities.ArticleResponse{},
+		})
+		return
+	}
+
+	// 🔹 Transformer en ArticleResponse
+	var response []entities.ArticleResponse
+	for _, a := range articles {
+		response = append(response, entities.ArticleResponse{
+			ArticleID:   a.Article_id,
+			Nom:         a.Nom,
+			Description: a.Description,
+			Prix:        a.Prix,
+			Stock:       a.Stock,
+			Categorie:   a.Categorie,
+			Commercant:  a.Commercant,
+			Images:      a.Images,
+		})
+	}
+
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+	// 🔹 Réponse finale
+	c.JSON(http.StatusOK, gin.H{
+		"status":     http.StatusOK,
+		"message":    "Articles du commerçant récupérés avec succès",
+		"page":       page,
+		"limit":      limit,
+		"totalItems": total,
+		"totalPages": totalPages,
+		"count":      len(response),
+		"data":       response,
+	})
+}
+
 // GetArticleDetail godoc
 // @Summary Récupérer les détails d'un article
 // @Description Retourne les informations détaillées d'un article (images, catégorie, commerçant)

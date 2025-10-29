@@ -5,6 +5,12 @@ definitions:
         type: integer
       client_id:
         type: integer
+      latitude:
+        type: number
+      lieuxLivraison:
+        type: string
+      longitude:
+        type: number
       prix_unitaire:
         type: number
       quantite:
@@ -31,14 +37,14 @@ definitions:
     type: object
   entities.ArticleResponse:
     properties:
-      article_id:
-        type: integer
       categorie:
         $ref: '#/definitions/entities.Categorie'
       commercant:
         $ref: '#/definitions/entities.Commercant'
       description:
         type: string
+      id:
+        type: integer
       images:
         items:
           $ref: '#/definitions/entities.ArticleImage'
@@ -54,6 +60,8 @@ definitions:
     properties:
       categorie_id:
         type: integer
+      image_url:
+        type: string
       nom:
         type: string
       parent_id:
@@ -69,6 +77,10 @@ definitions:
         type: string
       email:
         type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
       nom:
         type: string
       telephone:
@@ -91,8 +103,12 @@ definitions:
         type: integer
       lastname:
         type: string
+      latitude:
+        type: number
       login:
         type: string
+      longitude:
+        type: number
       mail:
         type: string
       name:
@@ -369,6 +385,46 @@ paths:
       summary: Refresh access token
       tags:
       - auth
+  /dash/article/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retourne les informations détaillées d'un article (images, catégorie,
+        commerçant)
+      parameters:
+      - description: ID de l'article
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.ArticleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Récupérer les détails d'un article
+      tags:
+      - article
   /dash/article/{id}/delete:
     delete:
       description: Supprime un article en fonction de son ID
@@ -459,11 +515,11 @@ paths:
         in: formData
         name: taille
         type: string
-      - description: Fichier image à uploader
+      - description: Image encodée en base64
         in: formData
         name: image
         required: true
-        type: file
+        type: string
       produces:
       - application/json
       responses:
@@ -540,6 +596,42 @@ paths:
             additionalProperties: true
             type: object
       summary: Assigner une commande à un livreur
+      tags:
+      - commande
+  /dash/article/commande/add:
+    post:
+      consumes:
+      - application/json
+      description: Crée une nouvelle commande avec ses articles et envoie une notification
+        WS aux commerçants concernés
+      parameters:
+      - description: Liste des articles de la commande
+        in: body
+        name: payload
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/controller.ArticlePayload'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Commande créée avec succès, contient la commande et les articles
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Payload vide ou erreur lors de l'insertion
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erreur serveur lors de la création de la commande
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Ajouter une commande
       tags:
       - commande
   /dash/article/commande/commandeAssign/{user_id}:
@@ -732,40 +824,4 @@ paths:
       summary: Créer un panier et ajouter un article
       tags:
       - panier
-  /ddash/article/commande/add:
-    post:
-      consumes:
-      - application/json
-      description: Crée une nouvelle commande avec ses articles et envoie une notification
-        WS aux commerçants concernés
-      parameters:
-      - description: Liste des articles de la commande
-        in: body
-        name: payload
-        required: true
-        schema:
-          items:
-            $ref: '#/definitions/controller.ArticlePayload'
-          type: array
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Commande créée avec succès, contient la commande et les articles
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Payload vide ou erreur lors de l'insertion
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Erreur serveur lors de la création de la commande
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Ajouter une commande
-      tags:
-      - commande
 swagger: "2.0"

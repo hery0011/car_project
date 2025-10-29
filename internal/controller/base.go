@@ -41,6 +41,7 @@ type LivraisonHandler interface {
 	FilterArticleByCategorie(*gin.Context)
 	ListLivreur(*gin.Context)
 	GetLocation(*gin.Context)
+	ListeArticleByCommercant(*gin.Context)
 }
 
 type livraisonHandler struct {
