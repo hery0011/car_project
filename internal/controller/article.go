@@ -37,7 +37,7 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 		page = 1
 	}
 
-	limit := 13
+	limit := 10
 	offset := (page - 1) * limit
 
 	var articles []entities.Article
