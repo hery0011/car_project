@@ -35,6 +35,7 @@ func GetRoutes(apiAddress string) {
 	// commercant articles filtering
 	// --------------------------------------------------
 	router.GET("/dash/article/commercant", jwt.AuthMiddleware(), cHandler.FilterArticles)
+	router.PUT("/dash/article/update", jwt.AuthMiddleware(), cHandler.UpdateArticle)
 	// --------------------------------------------------
 
 	routeDelivery := router.Group("/api/delivery", jwt.AuthMiddleware())

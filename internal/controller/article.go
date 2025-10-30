@@ -306,7 +306,6 @@ func (h *livraisonHandler) ListCategories(c *gin.Context) {
 		categoryMap[cat.Categorie_id] = &entities.CategoryResponse{
 			CategoryId:    uint(cat.Categorie_id),
 			Nom:           cat.Nom,
-			ImageUrl:      cat.ImageUrl,
 			SubCategories: []*entities.CategoryResponse{},
 		}
 	}
@@ -1003,16 +1002,6 @@ func (h *livraisonHandler) UpdateArticle(c *gin.Context) {
 		return
 	}
 
-	// Vérification du commercant
-	var existingCommercant entities.Commercant
-	if h.db.First(&existingCommercant, input.CommercantID).Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": fmt.Sprintf("Commercant ID %d non trouvé", input.CommercantID),
-		})
-		return
-	}
-
 	tx := h.db.Begin()
 	if tx.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to start transaction", "error": tx.Error.Error()})
@@ -1054,7 +1043,7 @@ func (h *livraisonHandler) UpdateArticle(c *gin.Context) {
 				return
 			}
 
-			fileName := fmt.Sprintf("/uploads/commercants/%d/articles/%d/uploads/%d-%d-%d.jpg", input.CommercantID, article.ArticleID, article.ArticleID, i, time.Now().UnixNano())
+			fileName := fmt.Sprintf("/uploads/commercants/%d/articles/%d/uploads/%d-%d-%d.jpg", *user.CommercantID, article.ArticleID, article.ArticleID, i, time.Now().UnixNano())
 			dirPath := filepath.Dir(fileName)
 
 			if err := os.MkdirAll("."+dirPath, os.ModePerm); err != nil {
