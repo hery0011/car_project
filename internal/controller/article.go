@@ -878,6 +878,7 @@ func (h *livraisonHandler) FilterArticles(c *gin.Context) {
 		Preload("Commercant")
 
 	// --- Filtrer uniquement les articles du commerçant de l'utilisateur connecté ---
+
 	var user entities.User
 	if err := h.db.First(&user, userID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -959,5 +960,177 @@ func (h *livraisonHandler) FilterArticles(c *gin.Context) {
 		"totalPages": totalPages,
 		"count":      len(response),
 		"data":       response,
+	})
+}
+
+func (h *livraisonHandler) UpdateArticle(c *gin.Context) {
+	var input entities.ArticleUpdateRequest
+
+	userID, err := helper.GetUserID(c)
+	if err != nil {
+		// l'erreur a déjà été gérée dans GetUserID, on stoppe le handler
+		return
+	}
+
+	var user entities.User
+	if err := h.db.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Impossible de récupérer l'utilisateur",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		log.Printf("Erreur de Binding JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "Erreur de validation de la requête JSON",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	if input.ArticleID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "ArticleID est manquant ou invalide (doit être > 0)."})
+		return
+	}
+
+	var article entities.Article
+	if err := h.db.Preload("Images").Preload("Categories").First(&article, input.ArticleID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": fmt.Sprintf("Article ID %d non trouvé", input.ArticleID)})
+		return
+	}
+
+	// Vérification du commercant
+	var existingCommercant entities.Commercant
+	if h.db.First(&existingCommercant, input.CommercantID).Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  http.StatusNotFound,
+			"message": fmt.Sprintf("Commercant ID %d non trouvé", input.CommercantID),
+		})
+		return
+	}
+
+	tx := h.db.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to start transaction", "error": tx.Error.Error()})
+		return
+	}
+
+	// Mise à jour des champs
+	article.Nom = input.Nom
+	article.Description = input.Description
+	article.Prix = input.Prix
+	article.Stock = input.Stock
+	article.CommercantID = *user.CommercantID
+	article.Slug = generateSlug(input.Nom)
+
+	if err := tx.Save(&article).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update article", "error": err.Error()})
+		return
+	}
+
+	// --- Gestion des images ---
+	// On peut supprimer les anciennes images si nécessaire
+	if len(input.Images) > 0 {
+		for _, img := range article.Images {
+			os.Remove("." + img.Url) // supprimer fichier existant
+			tx.Delete(&img)
+		}
+
+		var savedImages []entities.ArticleImage
+		for i, imgPayload := range input.Images {
+			base64Image := imgPayload.Base64Data
+			if coI := strings.Index(base64Image, ","); coI != -1 {
+				base64Image = base64Image[coI+1:]
+			}
+			imgData, err := base64.StdEncoding.DecodeString(base64Image)
+			if err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Image #%d: Invalid base64 data", i+1), "error": err.Error()})
+				return
+			}
+
+			fileName := fmt.Sprintf("/uploads/commercants/%d/articles/%d/uploads/%d-%d-%d.jpg", input.CommercantID, article.ArticleID, article.ArticleID, i, time.Now().UnixNano())
+			dirPath := filepath.Dir(fileName)
+
+			if err := os.MkdirAll("."+dirPath, os.ModePerm); err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Image #%d: Failed to create directory structure", i+1), "error": err.Error()})
+				return
+			}
+
+			if err := ioutil.WriteFile("."+fileName, imgData, 0644); err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Image #%d: Failed to save file", i+1), "error": err.Error()})
+				return
+			}
+
+			imageRecord := entities.ArticleImage{
+				Article_id: article.ArticleID,
+				Url:        fileName,
+				Largeur:    imgPayload.Largeur,
+				Hauteur:    imgPayload.Hauteur,
+				Ordre:      imgPayload.Ordre,
+				Type:       imgPayload.Type,
+				Taille:     imgPayload.Taille,
+			}
+
+			if err := tx.Create(&imageRecord).Error; err != nil {
+				os.Remove("." + fileName)
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Image #%d: Failed to save record", i+1), "error": err.Error()})
+				return
+			}
+			savedImages = append(savedImages, imageRecord)
+		}
+		article.Images = savedImages
+	}
+
+	// --- Gestion des catégories ---
+	if len(input.CategorieIDs) > 0 {
+		// supprimer les anciens liens
+		tx.Exec("DELETE FROM article_category WHERE article_id = ?", article.ArticleID)
+
+		var linkedCategories []entities.Categorie
+		for _, catID := range input.CategorieIDs {
+			var count int64
+			if err := tx.Model(&entities.Categorie{}).Where("categorie_id = ?", catID).Count(&count).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Database error during category check", "error": err.Error()})
+				return
+			}
+
+			if count == 0 {
+				tx.Rollback()
+				c.JSON(http.StatusNotFound, gin.H{"message": fmt.Sprintf("Category ID %d not found", catID)})
+				return
+			}
+
+			if err := tx.Exec("INSERT INTO article_category (article_id, categorie_id) VALUES (?, ?)", article.ArticleID, catID).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to link category", "error": err.Error()})
+				return
+			}
+
+			var cat entities.Categorie
+			h.db.First(&cat, catID)
+			linkedCategories = append(linkedCategories, cat)
+		}
+		article.Categories = linkedCategories
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit transaction", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "Article mis à jour avec succès",
+		"data":    article,
 	})
 }
