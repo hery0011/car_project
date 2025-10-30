@@ -356,25 +356,28 @@ func (h *livraisonHandler) ListCategories(c *gin.Context) {
 func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 	var input entities.ArticleCreateRequest
 
+	userID, err := helper.GetUserID(c)
+	if err != nil {
+		// l'erreur a déjà été gérée dans GetUserID, on stoppe le handler
+		return
+	}
+
+	var user entities.User
+	if err := h.db.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Impossible de récupérer l'utilisateur",
+			"error":   err.Error(),
+		})
+		return
+	}
+
 	if err := c.ShouldBindJSON(&input); err != nil {
 		log.Printf("Erreur de Binding JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
 			"message": "Erreur de validation de la requête JSON",
 			"error":   err.Error(),
-		})
-		return
-	}
-
-	if input.CommercantID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "CommercantID est manquant ou invalide (doit être > 0)."})
-		return
-	}
-	var existingCommercant entities.Commercant
-	if h.db.First(&existingCommercant, input.CommercantID).Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": fmt.Sprintf("Commercant ID %d non trouvé. Impossible d'associer l'article.", input.CommercantID),
 		})
 		return
 	}
@@ -388,7 +391,7 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 		IsActive:         true,
 		Prix:             input.Prix,
 		Stock:            input.Stock,
-		CommercantID:     input.CommercantID,
+		CommercantID:     *user.CommercantID,
 	}
 
 	tx := h.db.Begin()
@@ -419,7 +422,7 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 		}
 
 		// 🔑 Gestion des chemins et création récursive des dossiers
-		fileName := fmt.Sprintf("/uploads/commercants/%d/articles/%d/uploads/%d-%d-%d.jpg", input.CommercantID, articleID, articleID, i, time.Now().UnixNano())
+		fileName := fmt.Sprintf("/uploads/commercants/%d/articles/%d/%d-%d-%d.jpg", input.CommercantID, articleID, articleID, i, time.Now().UnixNano())
 
 		dirPath := filepath.Dir(fileName)
 
@@ -1025,58 +1028,131 @@ func (h *livraisonHandler) UpdateArticle(c *gin.Context) {
 	// --- Gestion des images ---
 	// On peut supprimer les anciennes images si nécessaire
 	if len(input.Images) > 0 {
-		for _, img := range article.Images {
-			os.Remove("." + img.Url) // supprimer fichier existant
-			tx.Delete(&img)
-		}
+		var newImages []entities.ArticleImage
 
-		var savedImages []entities.ArticleImage
 		for i, imgPayload := range input.Images {
-			base64Image := imgPayload.Base64Data
-			if coI := strings.Index(base64Image, ","); coI != -1 {
-				base64Image = base64Image[coI+1:]
-			}
-			imgData, err := base64.StdEncoding.DecodeString(base64Image)
-			if err != nil {
-				tx.Rollback()
-				c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Image #%d: Invalid base64 data", i+1), "error": err.Error()})
-				return
+			// 1️⃣ SUPPRESSION
+			if imgPayload.ToDelete && imgPayload.ImageID > 0 {
+				var existing entities.ArticleImage
+				if err := tx.First(&existing, "image_id = ?", imgPayload.ImageID).Error; err == nil {
+					// supprimer fichier physique
+					if existing.Url != "" {
+						_ = os.Remove("." + existing.Url)
+					}
+
+					// ✅ Suppression avec WHERE obligatoire
+					tx.Delete(&entities.ArticleImage{}, "image_id = ?", imgPayload.ImageID)
+				}
+				continue
 			}
 
-			fileName := fmt.Sprintf("/uploads/commercants/%d/articles/%d/uploads/%d-%d-%d.jpg", *user.CommercantID, article.ArticleID, article.ArticleID, i, time.Now().UnixNano())
-			dirPath := filepath.Dir(fileName)
-
-			if err := os.MkdirAll("."+dirPath, os.ModePerm); err != nil {
-				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Image #%d: Failed to create directory structure", i+1), "error": err.Error()})
-				return
+			// 2️⃣ UPDATE EXISTANT (ordre/type) - SANS remplacement image
+			if imgPayload.ImageID > 0 && imgPayload.Base64Data == "" {
+				tx.Model(&entities.ArticleImage{}).
+					Where("image_id = ?", imgPayload.ImageID).
+					Updates(map[string]interface{}{
+						"ordre": imgPayload.Ordre,
+						"type":  imgPayload.Type,
+					})
+				continue
 			}
 
-			if err := ioutil.WriteFile("."+fileName, imgData, 0644); err != nil {
-				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Image #%d: Failed to save file", i+1), "error": err.Error()})
-				return
-			}
+			// 3️⃣ AJOUT OU REMPLACEMENT
+			if imgPayload.Base64Data != "" {
+				base64Data := imgPayload.Base64Data
+				mimeType := ""
+				if strings.HasPrefix(base64Data, "data:") {
+					parts := strings.Split(base64Data, ";")
+					if len(parts) > 0 {
+						mimeType = strings.TrimPrefix(parts[0], "data:")
+					}
+				}
 
-			imageRecord := entities.ArticleImage{
-				Article_id: article.ArticleID,
-				Url:        fileName,
-				Largeur:    imgPayload.Largeur,
-				Hauteur:    imgPayload.Hauteur,
-				Ordre:      imgPayload.Ordre,
-				Type:       imgPayload.Type,
-				Taille:     imgPayload.Taille,
-			}
+				// Détecter extension correcte
+				ext := ".jpg"
+				switch mimeType {
+				case "image/png":
+					ext = ".png"
+				case "image/jpeg", "image/jpg":
+					ext = ".jpg"
+				case "image/webp":
+					ext = ".webp"
+				}
 
-			if err := tx.Create(&imageRecord).Error; err != nil {
-				os.Remove("." + fileName)
-				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Image #%d: Failed to save record", i+1), "error": err.Error()})
-				return
+				// supprimer header base64
+				if coI := strings.Index(base64Data, ","); coI != -1 {
+					base64Data = base64Data[coI+1:]
+				}
+
+				imgData, err := base64.StdEncoding.DecodeString(base64Data)
+				if err != nil {
+					tx.Rollback()
+					c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Image #%d: Invalid base64", i+1), "error": err.Error()})
+					return
+				}
+
+				// 🔥 Path unique
+				fileName := fmt.Sprintf("/uploads/commercants/%d/articles/%d/%d-%d-%d%s",
+					*user.CommercantID,
+					article.ArticleID,
+					article.ArticleID,
+					i,
+					time.Now().UnixNano(),
+					ext,
+				)
+
+				dirPath := filepath.Dir(fileName)
+				if err := os.MkdirAll("."+dirPath, os.ModePerm); err != nil {
+					tx.Rollback()
+					c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create directory", "error": err.Error()})
+					return
+				}
+
+				if err := os.WriteFile("."+fileName, imgData, 0644); err != nil {
+					tx.Rollback()
+					c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save file", "error": err.Error()})
+					return
+				}
+
+				// Si remplacement → supprimer ancien fichier
+				if imgPayload.ImageID > 0 {
+					var oldImg entities.ArticleImage
+					if err := tx.First(&oldImg, "image_id = ?", imgPayload.ImageID).Error; err == nil {
+						// supprimer fichier physique
+						if oldImg.Url != "" {
+							_ = os.Remove("." + oldImg.Url)
+						}
+
+						// ✅ Suppression avec WHERE obligatoire
+						tx.Delete(&entities.ArticleImage{}, "image_id = ?", imgPayload.ImageID)
+					}
+				}
+
+				newRecord := entities.ArticleImage{
+					Article_id: article.ArticleID,
+					Url:        fileName,
+					Ordre:      imgPayload.Ordre,
+					Type:       imgPayload.Type,
+					Largeur:    imgPayload.Largeur,
+					Hauteur:    imgPayload.Hauteur,
+					Taille:     imgPayload.Taille,
+				}
+
+				if err := tx.Create(&newRecord).Error; err != nil {
+					_ = os.Remove("." + fileName)
+					tx.Rollback()
+					c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save image record", "error": err.Error()})
+					return
+				}
+
+				newImages = append(newImages, newRecord)
 			}
-			savedImages = append(savedImages, imageRecord)
 		}
-		article.Images = savedImages
+
+		// Rafraîchir la liste retournée
+		var finalImages []entities.ArticleImage
+		tx.Where("article_id = ?", article.ArticleID).Order("ordre ASC").Find(&finalImages)
+		article.Images = finalImages
 	}
 
 	// --- Gestion des catégories ---
