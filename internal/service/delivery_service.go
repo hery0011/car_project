@@ -63,8 +63,8 @@ func (s *DeliveryService) CreateTicketFromOrder(ord *entities.Order, createdBy i
 		PriceLastUpdatedBy: nil,  // système par défaut
 		StatusID:           s.getPendingStatusID(tx),
 		AssignedTo:         nil,
-		CreatedAt:          now.Format("2006-10-26 12:13:15"),
-		UpdatedAt:          now.Format("2006-10-26 12:13:15"),
+		CreatedAt:          now.Format("2006-01-02 15:04:05"),
+		UpdatedAt:          now.Format("2006-01-02 15:04:05"),
 	}
 
 	if err := tx.Create(ticket).Error; err != nil {
