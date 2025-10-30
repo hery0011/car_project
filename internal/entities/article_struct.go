@@ -76,3 +76,28 @@ type ArticleCreateRequest struct {
 	CategorieIDs []int          `json:"categorie_ids" binding:"required"` // Changement pour gérer plusieurs catégories
 	Images       []ImagePayload `json:"images" binding:"required"`        // 🔑 Changement: Slice de données d'image
 }
+
+// --------------------
+// Struct pour l'update
+// --------------------
+type ArticleUpdateRequest struct {
+	ArticleID    uint                `json:"id" binding:"required"`
+	Nom          string              `json:"nom" binding:"required"`
+	Description  string              `json:"description"`
+	Prix         float64             `json:"prix"`
+	Stock        int                 `json:"stock"`
+	CommercantID uint                `json:"commercant_id,omitempty"` // optionnel si pas modifiable
+	CategorieIDs []uint              `json:"categorie_ids"`
+	Images       []ArticleImageInput `json:"images"`
+}
+
+type ArticleImageInput struct {
+	ImageID    uint   `json:"image_id,omitempty"` // ID existante si modification/suppression
+	ToDelete   bool   `json:"to_delete,omitempty"`
+	Base64Data string `json:"base64_data,omitempty"` // pour nouvelle image
+	Ordre      int    `json:"ordre,omitempty"`
+	Type       string `json:"type,omitempty"` // main, gallery, thumbnail
+	Taille     string `json:"taille,omitempty"`
+	Largeur    int    `json:"largeur,omitempty"`
+	Hauteur    int    `json:"hauteur,omitempty"`
+}
