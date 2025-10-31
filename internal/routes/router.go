@@ -25,27 +25,27 @@ func GetRoutes(apiAddress string) {
 
 	// Public routes
 	// --------------------------------------------------
-	router.GET("/categories/list", cHandler.ListCategories)
-	router.GET("/articles/:id", cHandler.GetArticleDetail)
-	router.POST("/orders/create", jwt.AuthMiddleware(), cHandler.Checkout)
+	router.GET(config.ListCategories, cHandler.ListCategories)
+	router.GET(config.GetArticleDetail, cHandler.GetArticleDetail)
+	router.POST(config.Checkout, jwt.AuthMiddleware(), cHandler.Checkout)
 	r := router.Group("/api/tickets")
 	r.GET("", cHandler.GetTickets)
 	// --------------------------------------------------
 
 	// commercant articles filtering
 	// --------------------------------------------------
-	router.GET("/dash/article/commercant", jwt.AuthMiddleware(), cHandler.FilterArticles)
-	router.PUT("/dash/article/update", jwt.AuthMiddleware(), cHandler.UpdateArticle)
+	router.GET(config.FilterArticles, jwt.AuthMiddleware(), cHandler.FilterArticles)
+	router.PUT(config.UpdateArticle, jwt.AuthMiddleware(), cHandler.UpdateArticle)
 	// --------------------------------------------------
 
-	routeDelivery := router.Group("/api/delivery", jwt.AuthMiddleware())
+	routeDelivery := router.Group(config.Delivery, jwt.AuthMiddleware())
 	{
-		routeDelivery.GET("/tickets", cHandler.GetTickets)
-		routeDelivery.PUT("/tickets/:id", cHandler.UpdateTicket)        // pour éditer
-		routeDelivery.PUT("/tickets/:id/assign", cHandler.AssignTicket) // pour assigner
+		routeDelivery.GET(config.Tickets, cHandler.GetTickets)
+		routeDelivery.PUT(config.UpdateTicket, cHandler.UpdateTicket) // pour éditer
+		routeDelivery.PUT(config.AssignTicket, cHandler.AssignTicket) // pour assigner
 	}
 
-	router.GET("/orders/list", jwt.AuthMiddleware(), cHandler.ListOrders)
+	router.GET(config.ListOrders, jwt.AuthMiddleware(), cHandler.ListOrders)
 
 	authGroup := router.Group(config.AuthPath)
 	{

@@ -46,10 +46,15 @@ const (
 	FilterArticleByName       = "/filterArticle/:article"
 	FilterArticleByCategorie  = "/filterCategorie/:categorie"
 	ListeArticleByCommercant  = "/listArticleByCommerçant/:idCommercant"
+	FilterArticles            = "/dash/article/commercant"
+	UpdateArticle             = "/dash/article/update"
+	GetArticleDetail          = "/articles/:id"
+	Checkout                  = "/orders/create"
 
 	//categorie
-	CategoriePath = "/categorie"
-	ListCategorie = "/list"
+	CategoriePath  = "/categorie"
+	ListCategorie  = "/list"
+	ListCategories = "/categories/list"
 
 	//panier
 	PanierPath   = "/panier"
@@ -73,4 +78,11 @@ const (
 	//commercant
 	CommercantPath    = "/commercant"
 	ChercheCommercant = "/ChercheCommercant"
+
+	//Delivery
+	Delivery     = "/api/delivery"
+	Tickets      = "/tickets"
+	UpdateTicket = "/tickets/:id"
+	AssignTicket = "/tickets/:id/assign"
+	ListOrders   = "/orders/list"
 )
