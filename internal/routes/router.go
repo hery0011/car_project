@@ -80,7 +80,7 @@ func GetRoutes(apiAddress string) {
 			articleGroup.DELETE(config.DeleteArticle, cHandler.DeleteArticle)
 			articleGroup.GET(config.FilterArticleByCommercant, cHandler.FilterArticleByCommercant)
 			articleGroup.GET(config.FilterArticleByName, cHandler.FilterArticleByName)
-			articleGroup.GET(config.FilterArticleByCategorie, cHandler.FilterArticleByCategorie)
+			articleGroup.POST(config.FilterArticleAll, cHandler.FilterArticleByCategorie)
 
 			categorieGroup := articleGroup.Group(config.CategoriePath)
 			{

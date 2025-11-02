@@ -101,3 +101,13 @@ type ArticleImageInput struct {
 	Largeur    int    `json:"largeur,omitempty"`
 	Hauteur    int    `json:"hauteur,omitempty"`
 }
+
+type ArticleFilterRequest struct {
+	Category     string `json:"category"`
+	ProductText  string `json:"productText"`
+	MerchantText string `json:"merchantText"`
+	Prix         struct {
+		Lower float64 `json:"lower"`
+		Upper float64 `json:"upper"`
+	} `json:"prix"`
+}
