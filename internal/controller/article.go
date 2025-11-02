@@ -754,6 +754,7 @@ func (h *livraisonHandler) FilterArticleByName(c *gin.Context) {
 		"data":       response,
 	})
 }
+
 func (h *livraisonHandler) FilterArticleByCategorie(c *gin.Context) {
 	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
 	if err != nil || page < 1 {
@@ -763,32 +764,56 @@ func (h *livraisonHandler) FilterArticleByCategorie(c *gin.Context) {
 	limit := 10
 	offset := (page - 1) * limit
 
-	// Récupérer le nom de la catégorie depuis la QUERY STRING (ex: ?categorie=boissons)
-	categorieNom := c.Param("categorie")
+	// ✅ Lire le body JSON
+	var filter entities.ArticleFilterRequest
+	if err := c.ShouldBindJSON(&filter); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "Format des filtres invalide",
+			"error":   err.Error(),
+		})
+		return
+	}
 
 	var articles []entities.Article
 	var total int64
 
-	// Base de la requête
+	// Base Query
 	query := h.db.Model(&entities.Article{}).
 		Preload("Images").
-		Preload("Categorie").
+		Preload("Categories").
 		Preload("Commercant")
 
-	// Si un nom de catégorie est fourni, on filtre.
-	if categorieNom != "" {
-		likeValue := fmt.Sprintf("%%%s%%", categorieNom)
-
-		// 🔑 CORRECTION CLÉ : Utiliser Joins pour filtrer sur une table associée (Categorie)
+	// 🔍 Filtre catégorie
+	if filter.Category != "" {
+		likeValue := fmt.Sprintf("%%%s%%", filter.Category)
 		query = query.
-			Joins("JOIN categorie ON categorie.categorie_id = article.categorie_id").
+			Joins("JOIN article_category ON article_category.article_id = article.article_id").
+			Joins("JOIN categorie ON categorie.categorie_id = article_category.categorie_id").
 			Where("categorie.nom LIKE ?", likeValue)
 	}
 
-	// 🔑 Utiliser Session() pour le comptage (isole l'état du filtre).
-	countQuery := query.Session(&gorm.Session{})
+	// 🔍 Filtre product text (nom ou description)
+	if filter.ProductText != "" {
+		likeValue := fmt.Sprintf("%%%s%%", filter.ProductText)
+		query = query.Where("article.nom LIKE ? OR article.description LIKE ?", likeValue, likeValue)
+	}
 
-	// Compter le total filtré
+	// 🏪 Filtre merchant/commercant
+	if filter.MerchantText != "" {
+		likeValue := fmt.Sprintf("%%%s%%", filter.MerchantText)
+		query = query.
+			Joins("JOIN commercant ON commercant.commercant_id = article.commercant_id").
+			Where("commercant.nom LIKE ?", likeValue)
+	}
+
+	// 💰 Filtre prix
+	if filter.Prix.Lower > 0 || filter.Prix.Upper > 0 {
+		query = query.Where("article.prix BETWEEN ? AND ?", filter.Prix.Lower, filter.Prix.Upper)
+	}
+
+	// Count
+	countQuery := query.Session(&gorm.Session{})
 	if err := countQuery.Count(&total).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
@@ -798,11 +823,8 @@ func (h *livraisonHandler) FilterArticleByCategorie(c *gin.Context) {
 		return
 	}
 
-	// Charger les données paginées
-	if err := query.
-		Limit(limit).
-		Offset(offset).
-		Find(&articles).Error; err != nil {
+	// Get data
+	if err := query.Limit(limit).Offset(offset).Find(&articles).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
 			"message": "Erreur lors de la récupération des articles",
@@ -811,16 +833,7 @@ func (h *livraisonHandler) FilterArticleByCategorie(c *gin.Context) {
 		return
 	}
 
-	if len(articles) == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": "Aucun article trouvé pour cette page",
-			"data":    []entities.ArticleResponse{},
-		})
-		return
-	}
-
-	// Mapper les résultats (inchangé)
+	// Mapping
 	var response []entities.ArticleResponse
 	for _, a := range articles {
 		response = append(response, entities.ArticleResponse{
@@ -837,10 +850,10 @@ func (h *livraisonHandler) FilterArticleByCategorie(c *gin.Context) {
 
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
-	// Réponse finale
+	// Response
 	c.JSON(http.StatusOK, gin.H{
 		"status":     http.StatusOK,
-		"message":    "Liste des articles récupérée avec succès",
+		"message":    "Liste filtrée des articles",
 		"page":       page,
 		"limit":      limit,
 		"totalItems": total,

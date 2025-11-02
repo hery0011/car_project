@@ -45,6 +45,7 @@ const (
 	FilterArticleByCommercant = "/filterCommerc/:commercant"
 	FilterArticleByName       = "/filterArticle/:article"
 	FilterArticleByCategorie  = "/filterCategorie/:categorie"
+	FilterArticleAll          = "/filter-articles"
 	ListeArticleByCommercant  = "/listArticleByCommerçant/:idCommercant"
 	FilterArticles            = "/dash/article/commercant"
 	UpdateArticle             = "/dash/article/update"
