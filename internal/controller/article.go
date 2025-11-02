@@ -772,7 +772,7 @@ func (h *livraisonHandler) FilterArticleByCategorie(c *gin.Context) {
 	// Base de la requête
 	query := h.db.Model(&entities.Article{}).
 		Preload("Images").
-		Preload("Categorie").
+		Preload("Categories").
 		Preload("Commercant")
 
 	// Si un nom de catégorie est fourni, on filtre.
@@ -781,7 +781,8 @@ func (h *livraisonHandler) FilterArticleByCategorie(c *gin.Context) {
 
 		// 🔑 CORRECTION CLÉ : Utiliser Joins pour filtrer sur une table associée (Categorie)
 		query = query.
-			Joins("JOIN categorie ON categorie.categorie_id = article.categorie_id").
+			Joins("JOIN article_category ON article_category.article_id = article.article_id").
+			Joins("JOIN categorie ON categorie.categorie_id = article_category.categorie_id").
 			Where("categorie.nom LIKE ?", likeValue)
 	}
 
