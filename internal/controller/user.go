@@ -2,6 +2,7 @@ package controller
 
 import (
 	"car_project/internal/entities"
+	"car_project/internal/helper"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -26,6 +27,8 @@ import (
 //	@Router			/admin/user/creatUser [post]
 func (h *livraisonHandler) CreatUser(c *gin.Context) {
 	var user entities.LoginStruct
+
+	// Validate incoming JSON
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
@@ -34,6 +37,8 @@ func (h *livraisonHandler) CreatUser(c *gin.Context) {
 		return
 	}
 
+	user.Login = user.Mail
+
 	if h.db == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
@@ -41,16 +46,53 @@ func (h *livraisonHandler) CreatUser(c *gin.Context) {
 		})
 		return
 	}
+
 	tx := h.db.Begin()
+
+	// 1. Create user
 	if err := tx.Create(&user).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
-			"message": "Failed to creat user",
+			"message": "Failed to create user",
 		})
 		return
 	}
 
+	// 2. Get the profil "client" dynamically
+	var profil struct {
+		IdProfil int `gorm:"column:idProfil"`
+	}
+
+	if err := tx.Table("profil").
+		Select("idProfil").
+		Where("nomProfil = ?", "client").
+		First(&profil).Error; err != nil {
+
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "User created but failed to assign default profile: 'client' profil not found",
+		})
+		return
+	}
+
+	// 3. Insert user-profil entry
+	userProfil := map[string]interface{}{
+		"idUser":   user.Id,
+		"idProfil": profil.IdProfil,
+	}
+
+	if err := tx.Table("userprofil").Create(&userProfil).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "User created but failed to assign profile",
+		})
+		return
+	}
+
+	// 4. Commit
 	if err := tx.Commit().Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
@@ -58,9 +100,11 @@ func (h *livraisonHandler) CreatUser(c *gin.Context) {
 		})
 		return
 	}
+
+	// Response
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
-		"message": "User created successfully",
+		"message": "User created successfully and default 'client' profile assigned",
 		"data":    user,
 	})
 }
@@ -154,5 +198,51 @@ func (h *livraisonHandler) UpdateUser(c *gin.Context) {
 		"status":  http.StatusOK,
 		"message": "Utilisateur mis à jour avec succès",
 		"data":    payload,
+	})
+}
+
+func (h *livraisonHandler) GetUserMenu(c *gin.Context) {
+	// Récupérer l'ID de l'utilisateur depuis la session
+	userID, err := helper.GetUserID(c)
+	if err != nil {
+		// erreur déjà gérée dans GetUserID
+		return
+	}
+
+	// Récupérer le rôle/profil de l'utilisateur depuis la table userprofil et profil
+	var role string
+	err = h.db.Table("userprofil").
+		Select("profil.nomProfil").
+		Joins("join profil on userprofil.idProfil = profil.idProfil").
+		Where("userprofil.idUser = ?", userID).
+		Limit(1). // si un user peut avoir plusieurs profils, on prend le premier
+		Scan(&role).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Impossible de récupérer le profil de l'utilisateur"})
+		return
+	}
+
+	// Récupérer les menus associés au rôle
+	var menus []struct {
+		Label string `json:"label"`
+		Icon  string `json:"icon"`
+		Link  string `json:"link"`
+	}
+
+	err = h.db.Table("menu").
+		Select("menu.label, menu.icon, menu.link").
+		Joins("join menu_roles on menu.id = menu_roles.menu_id").
+		Where("menu_roles.role = ?", role).
+		Scan(&menus).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Impossible de récupérer le menu"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   menus,
 	})
 }

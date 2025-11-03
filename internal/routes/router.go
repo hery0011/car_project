@@ -30,6 +30,7 @@ func GetRoutes(apiAddress string) {
 	router.POST(config.Checkout, jwt.AuthMiddleware(), cHandler.Checkout)
 	r := router.Group("/api/tickets")
 	r.GET("", cHandler.GetTickets)
+	router.POST("/api/register", cHandler.CreatUser)
 	// --------------------------------------------------
 
 	// commercant articles filtering
@@ -61,6 +62,7 @@ func GetRoutes(apiAddress string) {
 			userGroup.POST(config.Creat, cHandler.CreatUser)
 			userGroup.DELETE(config.Delete, cHandler.DeleteUser)
 			userGroup.PUT(config.Update, cHandler.UpdateUser)
+			userGroup.GET("/menu", cHandler.GetUserMenu)
 		}
 
 		profilGroup := adminGroup.Group(config.ProfilPath, jwt.AuthMiddleware())
