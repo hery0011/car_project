@@ -28,7 +28,7 @@ func GetRoutes(apiAddress string) {
 	router.GET(config.ListCategories, cHandler.ListCategories)
 	router.GET(config.GetArticleDetail, cHandler.GetArticleDetail)
 	router.POST(config.Checkout, jwt.AuthMiddleware(), cHandler.Checkout)
-	r := router.Group("/api/tickets")
+	r := router.Group("/api/tickets", jwt.AuthMiddleware())
 	r.GET("", cHandler.GetTickets)
 	router.POST("/api/register", cHandler.CreatUser)
 	// --------------------------------------------------

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"car_project/internal/entities"
+	"car_project/internal/helper"
 	"car_project/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -34,13 +35,21 @@ func (h *DeliveryHandler) CreateTicket(c *gin.Context) {
 }
 
 func (h *livraisonHandler) GetTickets(c *gin.Context) {
+	idUser, err := helper.GetUserID(c)
+	if err != nil {
+		return
+	}
+
 	var tickets []entities.DeliveryTicket
-	// On preload les adresses et le statut
-	if err := h.db.
+
+	err = h.db.
 		Preload("PickupAddress").
 		Preload("DropoffAddress").
 		Preload("Status").
-		Find(&tickets).Error; err != nil {
+		Where("client_id = ?", idUser). // <--- important pour filtrer les tickets du user
+		Find(&tickets).Error
+
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
