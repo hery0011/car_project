@@ -45,6 +45,7 @@ type LivraisonHandler interface {
 	FilterArticles(*gin.Context)
 	UpdateArticle(*gin.Context)
 	GetUserMenu(*gin.Context)
+	GetMontantWallet(*gin.Context)
 }
 
 type livraisonHandler struct {
