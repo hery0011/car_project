@@ -52,6 +52,9 @@ const (
 	GetArticleDetail          = "/articles/:id"
 	Checkout                  = "/orders/create"
 
+	WalletPath = "/wallet"
+	Montant    = "/montant"
+
 	//categorie
 	CategoriePath  = "/categorie"
 	ListCategorie  = "/list"
