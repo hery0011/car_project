@@ -372,6 +372,8 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 		return
 	}
 
+	input.CommercantID = *user.CommercantID
+
 	if err := c.ShouldBindJSON(&input); err != nil {
 		log.Printf("Erreur de Binding JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
