@@ -31,6 +31,7 @@ func GetRoutes(apiAddress string) {
 	r := router.Group("/api/tickets", jwt.AuthMiddleware())
 	r.GET("", cHandler.GetTickets)
 	router.POST("/api/register", cHandler.CreatUser)
+	router.POST("/commercant/register", cHandler.RegisterCommercant)
 	// --------------------------------------------------
 
 	// commercant articles filtering

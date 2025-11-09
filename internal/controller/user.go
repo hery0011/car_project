@@ -4,6 +4,7 @@ import (
 	"car_project/internal/entities"
 	"car_project/internal/helper"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -101,12 +102,29 @@ func (h *livraisonHandler) CreatUser(c *gin.Context) {
 		return
 	}
 
+	go h.createWalletForUser(user.Id)
+
 	// Response
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
 		"message": "User created successfully and default 'client' profile assigned",
 		"data":    user,
 	})
+}
+
+func (h *livraisonHandler) createWalletForUser(userID int) {
+	// Création de l'entité Wallet
+	wallet := entities.Wallet{
+		UserID:   userID,
+		Balance:  0.00,
+		Currency: "AR",
+	}
+
+	if err := h.db.Create(&wallet).Error; err != nil {
+		log.Printf("ERROR: Failed to create wallet for UserID %d: %v", userID, err)
+	} else {
+		log.Printf("INFO: Wallet created successfully for UserID %d", userID)
+	}
 }
 
 // DeleteUser supprime un utilisateur existant par son ID.
