@@ -412,7 +412,7 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 		})
 		return
 	}
-
+	now := time.Now()
 	article := entities.Article{
 		Nom:              input.Nom,
 		Slug:             generateSlug(input.Nom),
@@ -422,6 +422,8 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 		IsActive:         true,
 		Prix:             input.Prix,
 		Stock:            input.Stock,
+		CreatedAt:        now.Format("2006-01-02 15:04:05"),
+		UpdatedAt:        now.Format("2006-01-02 15:04:05"),
 		CommercantID:     *user.CommercantID,
 	}
 
@@ -1056,12 +1058,14 @@ func (h *livraisonHandler) UpdateArticle(c *gin.Context) {
 	}
 
 	// Mise à jour des champs
+	now := time.Now()
 	article.Nom = input.Nom
 	article.Description = input.Description
 	article.Prix = input.Prix
 	article.Stock = input.Stock
 	article.CommercantID = *user.CommercantID
 	article.Slug = generateSlug(input.Nom)
+	article.UpdatedAt = now.Format("2006-01-02 15:04:05")
 
 	if err := tx.Save(&article).Error; err != nil {
 		tx.Rollback()
