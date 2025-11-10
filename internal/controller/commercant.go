@@ -2,6 +2,7 @@ package controller
 
 import (
 	"car_project/internal/entities"
+	"log"
 	"math"
 	"net/http"
 
@@ -102,6 +103,7 @@ func (h *livraisonHandler) RegisterCommercant(c *gin.Context) {
 
 	if err := tx.Create(&user).Error; err != nil {
 		tx.Rollback()
+		log.Printf("[ERROR] Failed to create user. Data: %+v | DB Error: %v", user, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user"})
 		return
 	}
