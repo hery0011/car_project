@@ -31,20 +31,70 @@ import (
 // @Failure 400 {object} map[string]string
 // @Router /dash/article/list [get]
 func (h *livraisonHandler) ListArticle(c *gin.Context) {
-	// Récupérer le numéro de page depuis la query string (par défaut = 1)
+	// Pagination
 	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
 	if err != nil || page < 1 {
 		page = 1
 	}
-
 	limit := 10
 	offset := (page - 1) * limit
+
+	// Lire les filtres JSON (si fournis)
+	var filter entities.ArticleFilterRequest // <-- même struct que ton FilterArticleByCategorie
+	_ = c.ShouldBindJSON(&filter)            // On ignore l'erreur volontairement si pas de body
 
 	var articles []entities.Article
 	var total int64
 
-	// Compter le nombre total d'articles
-	if err := h.db.Model(&entities.Article{}).Count(&total).Error; err != nil {
+	// Base Query
+	query := h.db.Model(&entities.Article{}).
+		Preload("Images").
+		Preload("Categories").
+		Preload("Commercant")
+
+	// -----------------------------
+	// 🔍 Application des filtres
+	// -----------------------------
+
+	// Filtre catégorie
+	if filter.Category != "" {
+		likeValue := fmt.Sprintf("%%%s%%", filter.Category)
+		query = query.
+			Joins("JOIN article_category ON article_category.article_id = article.article_id").
+			Joins("JOIN categorie ON categorie.categorie_id = article_category.categorie_id").
+			Where("categorie.nom LIKE ?", likeValue)
+	}
+
+	// Filtre texte sur nom/description
+	if filter.ProductText != "" {
+		likeValue := fmt.Sprintf("%%%s%%", filter.ProductText)
+		query = query.Where("article.nom LIKE ? OR article.description LIKE ?", likeValue, likeValue)
+	}
+
+	// Filtre nom commercant
+	if filter.MerchantText != "" {
+		likeValue := fmt.Sprintf("%%%s%%", filter.MerchantText)
+		query = query.
+			Joins("JOIN commercant ON commercant.commercant_id = article.commercant_id").
+			Where("commercant.nom LIKE ?", likeValue)
+	}
+
+	// Filtre prix min/max
+	if filter.Prix.Lower > 0 || filter.Prix.Upper > 0 {
+		query = query.Where("article.prix BETWEEN ? AND ?", filter.Prix.Lower, filter.Prix.Upper)
+	}
+
+	// -----------------------------
+	// 📊 Récupération + Count
+	// -----------------------------
+
+	// Compter avec les filtres
+	countQuery := query.Session(&gorm.Session{})
+
+	fmt.Println("COUNT SQL:", countQuery.Statement.SQL.String())
+	fmt.Println("COUNT Vars:", countQuery.Statement.Vars)
+
+	if err := countQuery.Count(&total).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
 			"message": "Erreur lors du comptage des articles",
@@ -53,14 +103,7 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 		return
 	}
 
-	// Charger les données avec pagination + Preload
-	if err := h.db.
-		Preload("Images").
-		// Preload("Categorie").
-		Preload("Commercant").
-		Limit(limit).
-		Offset(offset).
-		Find(&articles).Error; err != nil {
+	if err := query.Debug().Limit(limit).Offset(offset).Find(&articles).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
 			"message": "Erreur lors de la récupération des articles",
@@ -68,41 +111,27 @@ func (h *livraisonHandler) ListArticle(c *gin.Context) {
 		})
 		return
 	}
-
-	// Vérifier si aucun article trouvé
-	if len(articles) == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": "Aucun article trouvé pour cette page",
-			"data":    []entities.ArticleResponse{},
-		})
-		return
-	}
-
-	// Transformer en ArticleResponse
+	// Mapping
 	var response []entities.ArticleResponse
 	for _, a := range articles {
-		resp := entities.ArticleResponse{
+		response = append(response, entities.ArticleResponse{
 			ArticleID:   a.ArticleID,
 			Nom:         a.Nom,
-			Slug:        a.Slug,
 			Description: a.Description,
 			Prix:        a.Prix,
 			Stock:       a.Stock,
-			// Categorie:   a.Categories[],
-			Commercant: a.Commercant,
-			Images:     a.Images,
-		}
-		response = append(response, resp)
+			Categorie:   a.Categories,
+			Commercant:  a.Commercant,
+			Images:      a.Images,
+		})
 	}
 
-	// Calcul du nombre total de pages
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
-	// Réponse finale
+	// Response
 	c.JSON(http.StatusOK, gin.H{
 		"status":     http.StatusOK,
-		"message":    "Liste des articles récupérée avec succès",
+		"message":    "Liste filtrée des articles",
 		"page":       page,
 		"limit":      limit,
 		"totalItems": total,
