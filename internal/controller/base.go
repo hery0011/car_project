@@ -47,6 +47,7 @@ type LivraisonHandler interface {
 	GetMontantWallet(*gin.Context)
 	RegisterCommercant(*gin.Context)
 	RegisterLivreur(*gin.Context)
+	GetProfile(*gin.Context)
 }
 
 type livraisonHandler struct {

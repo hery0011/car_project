@@ -33,6 +33,7 @@ func GetRoutes(apiAddress string) {
 	router.POST("/api/register", cHandler.CreatUser)
 	router.POST("/commercant/register", cHandler.RegisterCommercant)
 	router.POST("/livreur/register", cHandler.RegisterLivreur)
+	router.GET("/user/profile", jwt.AuthMiddleware(), cHandler.GetProfile)
 	// --------------------------------------------------
 
 	// commercant articles filtering

@@ -264,3 +264,13 @@ func (h *livraisonHandler) GetUserMenu(c *gin.Context) {
 		"data":   menus,
 	})
 }
+
+func (h *livraisonHandler) GetProfile(c *gin.Context) {
+	// 👀 Ici on simule que userID = 1 pour exemple
+	var user entities.User
+	if err := h.db.First(&user, 1).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Utilisateur non trouvé"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": user})
+}
