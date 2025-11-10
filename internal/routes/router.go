@@ -32,6 +32,7 @@ func GetRoutes(apiAddress string) {
 	r.GET("", cHandler.GetTickets)
 	router.POST("/api/register", cHandler.CreatUser)
 	router.POST("/commercant/register", cHandler.RegisterCommercant)
+	router.POST("/livreur/register", cHandler.RegisterLivreur)
 	// --------------------------------------------------
 
 	// commercant articles filtering
@@ -119,7 +120,6 @@ func GetRoutes(apiAddress string) {
 
 		livreurGroup := dashboardGroup.Group(config.LivreurPath, jwt.AuthMiddleware())
 		{
-			livreurGroup.POST(config.AjoutLivreur, cHandler.AjoutLivreur)
 			livreurGroup.GET(config.ListLivreur, cHandler.ListLivreur)
 			livreurGroup.GET(config.ListLivreurFilter, cHandler.GetLocation)
 
