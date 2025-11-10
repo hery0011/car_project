@@ -431,7 +431,7 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 		return
 	}
 
-	if err := tx.Create(&article).Error; err != nil {
+	if err := tx.Debug().Create(&article).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create article (Clé étrangère CommercantID)", "error": err.Error()})
 		return
@@ -478,7 +478,7 @@ func (h *livraisonHandler) AjoutArticle(c *gin.Context) {
 			Type:       imgPayload.Type,
 			Taille:     imgPayload.Taille,
 		}
-		if err := tx.Create(&imageRecord).Error; err != nil {
+		if err := tx.Debug().Create(&imageRecord).Error; err != nil {
 			os.Remove("." + fileName)
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Image #%d: Failed to save record", i+1), "error": err.Error()})
