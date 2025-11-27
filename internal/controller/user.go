@@ -116,7 +116,7 @@ func (h *livraisonHandler) createWalletForUser(userID int) {
 	// Création de l'entité Wallet
 	wallet := entities.Wallet{
 		UserID:   userID,
-		Balance:  0.00,
+		Balance:  1000000.00,
 		Currency: "AR",
 	}
 
